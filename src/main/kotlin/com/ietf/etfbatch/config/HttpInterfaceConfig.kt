@@ -21,11 +21,11 @@ class HttpInterfaceConfig {
     fun kisInterface(): KisInterface {
         val restClient = RestClient.builder()
             .baseUrl("https://openapi.koreainvestment.com:9443") // 필요하다면 기본 헤더 등 설정
-            .defaultHeaders({ headers ->
+            .defaultHeaders { headers ->
                 headers.set("Content-Type", "application/json; charset=utf-8")
                 headers.set("appkey", KIS_KEY)
                 headers.set("appsecret", KIS_SECRET)
-            })
+            }
             .build()
 
         val httpServiceProxyFactory = HttpServiceProxyFactory

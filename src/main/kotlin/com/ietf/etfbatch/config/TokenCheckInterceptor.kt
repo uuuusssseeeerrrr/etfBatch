@@ -8,7 +8,7 @@ import org.springframework.web.servlet.HandlerInterceptor
 
 @Component
 class TokenCheckInterceptor : HandlerInterceptor {
-    @Value("\${custom.batchToken}")
+    @Value($$"${custom.batchToken}")
     lateinit var batchToken: String
 
     private val AUTH_TOKEN_HEADER = "Authorization"

@@ -13,11 +13,11 @@ import java.time.LocalDateTime
 
 @Service
 class KisTokenService(val kisInterface: KisInterface) {
-    @Value("\${custom.kis.key}")
-    lateinit var KIS_KEY: String
+    @Value($$"${custom.kis.key}")
+    lateinit var kisKey: String
 
-    @Value("\${custom.kis.secret}")
-    lateinit var KIS_SECRET: String
+    @Value($$"${custom.kis.secret}")
+    lateinit var kisSecret: String
 
     fun getKisAccessToken(): String {
         val today = LocalDateTime.now().format(java.time.format.DateTimeFormatter.ofPattern("yyyyMMdd"))
@@ -28,24 +28,22 @@ class KisTokenService(val kisInterface: KisInterface) {
                 .where { Token.regDate eq today }
 
             if (tokenList.empty()) {
-                val kisTokenRequest = KisTokenRequest()
-                kisTokenRequest.appkey = KIS_KEY
-                kisTokenRequest.appsecret = KIS_SECRET
-
+                val kisTokenRequest = KisTokenRequest(kisKey, kisSecret)
                 val kisTokenResponse = kisInterface.tokenApiCall(kisTokenRequest)
+
                 if (kisTokenResponse.access_token.isNotEmpty()) {
                     Token.insert {
                         it[regDate] = today
                         it[token] = kisTokenResponse.access_token
                     }
-                }
 
-                accessToken = kisTokenResponse.access_token
+                    accessToken = kisTokenResponse.access_token
+                }
             } else {
                 accessToken = tokenList.first()[Token.token]
             }
         }
 
-        return accessToken;
+        return accessToken
     }
 }

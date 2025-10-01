@@ -1,8 +1,8 @@
 package com.ietf.etfbatch.stock.dto
 
 data class KisPriceDetailOutput (
-    var market : String,
-    var stockCode : String,
+    var market : String?,
+    var stockCode : String?,
     val rsym : String,
     val zdiv : String,
     val curr : String,
@@ -39,6 +39,4 @@ data class KisPriceDetailOutput (
     val tvol : String,
     val tamt : String,
     val etyp_nm : String
-) {
-
-}
+) 
