@@ -1,6 +1,6 @@
-package com.ietf.config
+package com.ietf.etfbatch.config
 
-import com.ietf.etfbatch.`interface`.KisInterface
+import com.ietf.etfbatch.httpInf.KisInterface
 import org.springframework.beans.factory.annotation.Value
 import org.springframework.context.annotation.Bean
 import org.springframework.context.annotation.Configuration
@@ -11,14 +11,14 @@ import org.springframework.web.service.invoker.HttpServiceProxyFactory
 
 @Configuration
 class HttpInterfaceConfig {
-    @Value("\${kis.key}")
+    @Value("\${custom.kis.key}")
     lateinit var KIS_KEY: String
 
-    @Value("\${kis.secret}")
+    @Value("\${custom.kis.secret}")
     lateinit var KIS_SECRET: String
 
     @Bean
-    fun restClient(): KisInterface {
+    fun kisInterface(): KisInterface {
         val restClient = RestClient.builder()
             .baseUrl("https://openapi.koreainvestment.com:9443") // 필요하다면 기본 헤더 등 설정
             .defaultHeaders({ headers ->

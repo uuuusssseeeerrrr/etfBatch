@@ -1,4 +1,4 @@
-package com.ietf.config
+package com.ietf.etfbatch.config
 
 import org.jetbrains.exposed.v1.jdbc.Database
 import org.jetbrains.exposed.v1.jdbc.transactions.TransactionManager

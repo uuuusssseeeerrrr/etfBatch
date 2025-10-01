@@ -1,9 +1,9 @@
 plugins {
-    kotlin("jvm") version "1.9.25"
-    kotlin("plugin.spring") version "1.9.25"
+    kotlin("jvm") version "2.2.20"
+    kotlin("plugin.spring") version "2.2.20"
     id("org.springframework.boot") version "3.5.6"
     id("io.spring.dependency-management") version "1.1.7"
-    kotlin("plugin.jpa") version "1.9.25"
+    kotlin("plugin.jpa") version "2.2.20"
 }
 
 group = "com.ietf"
@@ -42,7 +42,7 @@ dependencies {
     implementation("org.jetbrains.exposed:exposed-core:1.0.0-rc-1")
     implementation("org.jetbrains.exposed:exposed-dao:1.0.0-rc-1")
     implementation("org.jetbrains.exposed:exposed-jdbc:1.0.0-rc-1")
-    implementation("org.slf4j:slf4j-simple:2.0.13")
+    implementation("org.jetbrains.exposed:exposed-kotlin-datetime:1.0.0-rc-1")
     implementation("org.jetbrains.kotlinx:kotlinx-datetime:0.7.1")
 }
 

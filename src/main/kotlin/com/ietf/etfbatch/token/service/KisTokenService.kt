@@ -1,44 +1,51 @@
 package com.ietf.etfbatch.token.service
 
-import com.ietf.etfbatch.`interface`.KisInterface
-import com.ietf.etfbatch.token.model.KisTokenRequest
+import com.ietf.etfbatch.httpInf.KisInterface
+import com.ietf.etfbatch.token.dto.KisTokenRequest
 import com.ietf.etfbatch.token.model.Token
 import org.jetbrains.exposed.v1.core.eq
 import org.jetbrains.exposed.v1.jdbc.insert
 import org.jetbrains.exposed.v1.jdbc.selectAll
+import org.jetbrains.exposed.v1.jdbc.transactions.transaction
 import org.springframework.beans.factory.annotation.Value
+import org.springframework.stereotype.Service
 import java.time.LocalDateTime
 
-
+@Service
 class KisTokenService(val kisInterface: KisInterface) {
-    @Value("\${kis.key}")
+    @Value("\${custom.kis.key}")
     lateinit var KIS_KEY: String
 
-    @Value("\${kis.secret}")
+    @Value("\${custom.kis.secret}")
     lateinit var KIS_SECRET: String
 
     fun getKisAccessToken(): String {
         val today = LocalDateTime.now().format(java.time.format.DateTimeFormatter.ofPattern("yyyyMMdd"))
+        var accessToken = ""
 
-        val tokenList = Token.selectAll()
-            .where { Token.regDate eq today }
+        transaction {
+            val tokenList = Token.selectAll()
+                .where { Token.regDate eq today }
 
-        if (tokenList.empty()) {
-            val kisTokenRequest = KisTokenRequest()
-            kisTokenRequest.appkey = KIS_KEY
-            kisTokenRequest.appsecret = KIS_SECRET
+            if (tokenList.empty()) {
+                val kisTokenRequest = KisTokenRequest()
+                kisTokenRequest.appkey = KIS_KEY
+                kisTokenRequest.appsecret = KIS_SECRET
 
-            val kisTokenResponse = kisInterface.tokenApiCall(kisTokenRequest)
-            if (kisTokenResponse.access_token.isNotEmpty()) {
-                Token.insert {
-                    it[regDate] = today
-                    it[token] = kisTokenResponse.access_token
+                val kisTokenResponse = kisInterface.tokenApiCall(kisTokenRequest)
+                if (kisTokenResponse.access_token.isNotEmpty()) {
+                    Token.insert {
+                        it[regDate] = today
+                        it[token] = kisTokenResponse.access_token
+                    }
                 }
-            }
 
-            return kisTokenResponse.access_token
-        } else {
-            return tokenList.first()[Token.token]
+                accessToken = kisTokenResponse.access_token
+            } else {
+                accessToken = tokenList.first()[Token.token]
+            }
         }
+
+        return accessToken;
     }
 }

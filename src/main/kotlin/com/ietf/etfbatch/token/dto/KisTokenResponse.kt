@@ -1,4 +1,4 @@
-package com.ietf.etfbatch.token.model
+package com.ietf.etfbatch.token.dto
 
 import kotlinx.datetime.LocalDateTime
 
