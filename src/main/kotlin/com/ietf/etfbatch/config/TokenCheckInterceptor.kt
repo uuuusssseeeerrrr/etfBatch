@@ -11,21 +11,21 @@ class TokenCheckInterceptor : HandlerInterceptor {
     @Value($$"${custom.batchToken}")
     lateinit var batchToken: String
 
-    private val AUTH_TOKEN_HEADER = "Authorization"
+    private val authHeader = "Authorization"
 
     override fun preHandle(request: HttpServletRequest, response: HttpServletResponse, handler: Any): Boolean {
-        val token = request.getHeader(AUTH_TOKEN_HEADER)
+        val token = request.getHeader(authHeader)
 
         if (token == null || token.isBlank()) {
             response.status = HttpServletResponse.SC_UNAUTHORIZED
             response.contentType = "application/json; charset=UTF-8"
-            response.writer.write("""{"error": "Missing required header: $AUTH_TOKEN_HEADER"}""")
+            response.writer.write("""{"error": "Missing required header: $authHeader"}""")
 
             return false
         } else if (!token.startsWith("Bearer ") || token.replace("Bearer", "").trim() != batchToken) {
             response.status = HttpServletResponse.SC_UNAUTHORIZED
             response.contentType = "application/json; charset=UTF-8"
-            response.writer.write("""{"error": "token Error: $AUTH_TOKEN_HEADER"}""")
+            response.writer.write("""{"error": "token Error: $authHeader"}""")
 
             return false
         }

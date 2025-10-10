@@ -1,8 +1,14 @@
 package com.ietf.etfbatch.token.dto
 
+import com.fasterxml.jackson.annotation.JsonProperty
+
 data class KisTokenRequest(
-    val appkey: String,
-    val appsecret: String
+    @field:JsonProperty("appkey")
+    val appKey: String,
+
+    @field:JsonProperty("appsecret")
+    val appSecret: String
 ) {
-    val grant_type = "client_credentials"
+    @JsonProperty("grant_type")
+    val grantType = "client_credentials"
 }

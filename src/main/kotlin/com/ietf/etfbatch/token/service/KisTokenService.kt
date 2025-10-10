@@ -31,13 +31,13 @@ class KisTokenService(val kisInterface: KisInterface) {
                 val kisTokenRequest = KisTokenRequest(kisKey, kisSecret)
                 val kisTokenResponse = kisInterface.tokenApiCall(kisTokenRequest)
 
-                if (kisTokenResponse.access_token.isNotEmpty()) {
+                if (kisTokenResponse.accessToken.isNotEmpty()) {
+                    accessToken = kisTokenResponse.accessToken
+
                     Token.insert {
                         it[regDate] = today
-                        it[token] = kisTokenResponse.access_token
+                        it[token] = accessToken
                     }
-
-                    accessToken = kisTokenResponse.access_token
                 }
             } else {
                 accessToken = tokenList.first()[Token.token]

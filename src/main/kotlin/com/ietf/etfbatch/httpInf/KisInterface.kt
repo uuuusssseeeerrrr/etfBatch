@@ -1,5 +1,7 @@
 package com.ietf.etfbatch.httpInf
 
+import com.ietf.etfbatch.stock.dto.KisInfoRequest
+import com.ietf.etfbatch.stock.dto.KisInfoResponse
 import com.ietf.etfbatch.stock.dto.KisPriceDetailResponse
 import com.ietf.etfbatch.token.dto.KisTokenRequest
 import com.ietf.etfbatch.token.dto.KisTokenResponse
@@ -27,7 +29,8 @@ interface KisInterface {
     @PostExchange("/uapi/overseas-price/v1/quotations/search-info", contentType = "application/json; charset=utf-8")
     fun searchInfoApiCall(
         @RequestHeader("tr_id") trId: String,
-        @RequestHeader("custtype") custtype: String,
-        @RequestBody request: KisTokenRequest
-    ): KisTokenResponse
+        @RequestHeader("custtype") custType: String,
+        @RequestHeader("authorization") authorization: String,
+        @RequestBody request: KisInfoRequest
+    ): KisInfoResponse
 }

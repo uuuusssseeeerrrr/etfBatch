@@ -1,8 +1,17 @@
 package com.ietf.etfbatch.token.dto
 
+import com.fasterxml.jackson.annotation.JsonProperty
+
 data class KisTokenResponse(
-    val access_token: String,
-    val token_type: String,
-    val expires_in: Int,
-    val access_token_token_expired: String
+    @param:JsonProperty("access_token")
+    val accessToken: String,
+
+    @param:JsonProperty("token_type")
+    val tokenType: String,
+
+    @param:JsonProperty("expires_in")
+    val expiresIn: Int,
+
+    @param:JsonProperty("access_token_token_expired")
+    val accessTokenTokenExpired: String
 )

@@ -11,11 +11,11 @@ import org.springframework.web.service.invoker.HttpServiceProxyFactory
 
 @Configuration
 class HttpInterfaceConfig {
-    @Value("\${custom.kis.key}")
-    lateinit var KIS_KEY: String
+    @Value($$"${custom.kis.key}")
+    lateinit var key: String
 
-    @Value("\${custom.kis.secret}")
-    lateinit var KIS_SECRET: String
+    @Value($$"${custom.kis.secret}")
+    lateinit var secret: String
 
     @Bean
     fun kisInterface(): KisInterface {
@@ -23,8 +23,8 @@ class HttpInterfaceConfig {
             .baseUrl("https://openapi.koreainvestment.com:9443") // 필요하다면 기본 헤더 등 설정
             .defaultHeaders { headers ->
                 headers.set("Content-Type", "application/json; charset=utf-8")
-                headers.set("appkey", KIS_KEY)
-                headers.set("appsecret", KIS_SECRET)
+                headers.set("appkey", key)
+                headers.set("appsecret", secret)
             }
             .build()
 
