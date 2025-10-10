@@ -10,12 +10,6 @@ group = "com.ietf"
 version = "0.0.1-SNAPSHOT"
 description = "etfBatch"
 
-java {
-    toolchain {
-        languageVersion = JavaLanguageVersion.of(21)
-    }
-}
-
 configurations {
     compileOnly {
         extendsFrom(configurations.annotationProcessor.get())
