@@ -1,20 +1,19 @@
 package com.ietf.etfbatch.config
 
+import com.typesafe.config.ConfigFactory
 import io.r2dbc.spi.IsolationLevel
-import kotlinx.coroutines.CoroutineDispatcher
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.newFixedThreadPoolContext
 import org.jetbrains.exposed.v1.r2dbc.R2dbcDatabase
 import org.jetbrains.exposed.v1.r2dbc.R2dbcDatabaseConfig
-import org.jetbrains.exposed.v1.r2dbc.transactions.suspendTransaction
 
-object dataSourceFactory {
+object DataSourceFactory {
     fun init() {
-        val database = R2dbcDatabase.connect(
+        val config = ConfigFactory.load()
+
+        R2dbcDatabase.connect(
             driver = "mariadb",
-            url = System.getenv("ktor.datasource.url"),
-            user = System.getenv("ktor.datasource.username"),
-            password = System.getenv("ktor.datasource.password"),
+            url = config.getString("database.url"),
+            user = config.getString("database.username"),
+            password = config.getString("database.password"),
             databaseConfig = R2dbcDatabaseConfig {
                 defaultMaxAttempts = 3
                 defaultR2dbcIsolationLevel = IsolationLevel.READ_COMMITTED
@@ -22,6 +21,3 @@ object dataSourceFactory {
         )
     }
 }
-
-suspend fun <T> dbQuery(block: suspend () -> T): T =
-    suspendTransaction { block() }

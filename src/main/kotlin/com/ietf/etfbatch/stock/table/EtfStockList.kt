@@ -1,4 +1,4 @@
-package com.ietf.etfbatch.stock.model
+package com.ietf.etfbatch.stock.table
 
 import org.jetbrains.exposed.v1.core.Table
 import org.jetbrains.exposed.v1.datetime.datetime

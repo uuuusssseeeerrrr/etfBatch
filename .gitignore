@@ -4,6 +4,7 @@ build/
 !gradle/wrapper/gradle-wrapper.jar
 !**/src/main/**/build/
 !**/src/test/**/build/
+dockerfile
 
 ### STS ###
 .apt_generated
@@ -38,7 +39,4 @@ out/
 
 ### Kotlin ###
 .kotlin
-
 .env
-
-/src/main/resources/application.yaml
