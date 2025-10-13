@@ -1,14 +1,14 @@
 package com.ietf.etfbatch.token.dto
 
-import com.fasterxml.jackson.annotation.JsonProperty
+import kotlinx.serialization.SerialName
 
 data class KisTokenRequest(
-    @field:JsonProperty("appkey")
+    @SerialName("appkey")
     val appKey: String,
 
-    @field:JsonProperty("appsecret")
+    @SerialName("appsecret")
     val appSecret: String
 ) {
-    @JsonProperty("grant_type")
+    @SerialName("grant_type")
     val grantType = "client_credentials"
 }

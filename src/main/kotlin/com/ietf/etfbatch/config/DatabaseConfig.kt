@@ -1,20 +1,27 @@
 package com.ietf.etfbatch.config
 
-import org.jetbrains.exposed.v1.jdbc.Database
-import org.jetbrains.exposed.v1.jdbc.transactions.TransactionManager
-import org.springframework.context.annotation.Configuration
-import org.springframework.context.event.ContextRefreshedEvent
-import org.springframework.context.event.EventListener
-import java.sql.Connection
-import javax.sql.DataSource
+import io.r2dbc.spi.IsolationLevel
+import kotlinx.coroutines.CoroutineDispatcher
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.newFixedThreadPoolContext
+import org.jetbrains.exposed.v1.r2dbc.R2dbcDatabase
+import org.jetbrains.exposed.v1.r2dbc.R2dbcDatabaseConfig
+import org.jetbrains.exposed.v1.r2dbc.transactions.suspendTransaction
 
-@Configuration
-class DatabaseConfig(private val dataSource: DataSource) {
-    @EventListener(ContextRefreshedEvent::class)
-    fun initExposedDatabase() {
-        Database.connect(dataSource)
-
-        TransactionManager.defaultDatabase = Database.connect(dataSource)
-        TransactionManager.manager.defaultIsolationLevel = Connection.TRANSACTION_READ_COMMITTED
+object dataSourceFactory {
+    fun init() {
+        val database = R2dbcDatabase.connect(
+            driver = "mariadb",
+            url = System.getenv("ktor.datasource.url"),
+            user = System.getenv("ktor.datasource.username"),
+            password = System.getenv("ktor.datasource.password"),
+            databaseConfig = R2dbcDatabaseConfig {
+                defaultMaxAttempts = 3
+                defaultR2dbcIsolationLevel = IsolationLevel.READ_COMMITTED
+            }
+        )
     }
 }
+
+suspend fun <T> dbQuery(block: suspend () -> T): T =
+    suspendTransaction { block() }

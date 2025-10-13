@@ -1,10 +1,10 @@
 package com.ietf.etfbatch.stock.dto
 
-import com.fasterxml.jackson.annotation.JsonProperty
+import kotlinx.serialization.SerialName
 
 data class KisPriceDetailResponse(
-    @param:JsonProperty("rt_cd") val rtCd: String,
-    @param:JsonProperty("msg_cd") val msgCd: String,
-    @param:JsonProperty("msg1") val msg1: String?,
-    @param:JsonProperty("output") val output: KisPriceDetailOutput? = null
+    @SerialName("rt_cd") val rtCd: String,
+    @SerialName("msg_cd") val msgCd: String,
+    @SerialName("msg1") val msg1: String?,
+    @SerialName("output") val output: KisPriceDetailOutput? = null
 )

@@ -1,6 +1,6 @@
 package com.ietf.etfbatch.stock.dto
 
-import com.fasterxml.jackson.annotation.JsonProperty
+import kotlinx.serialization.SerialName
 
 data class KisPriceDetailOutput(
     var market: String?,
@@ -29,26 +29,26 @@ data class KisPriceDetailOutput(
     val shar: String,
     val mcap: String,
     val tomv: String,
-    @param:JsonProperty("t_xprc")
+    @SerialName("t_xprc")
     val tXprc: String,
-    @param:JsonProperty("t_xdif")
+    @SerialName("t_xdif")
     val tXdif: String,
-    @param:JsonProperty("t_xrat")
+    @SerialName("t_xrat")
     val tXrat: String,
-    @param:JsonProperty("t_rate")
+    @SerialName("t_rate")
     val tRate: String,
-    @param:JsonProperty("t_xsgn")
+    @SerialName("t_xsgn")
     val tXsgn: String,
-    @param:JsonProperty("e_ordyn")
+    @SerialName("e_ordyn")
     val eOrdyn: String,
-    @param:JsonProperty("e_hogau")
+    @SerialName("e_hogau")
     val eHogau: String,
-    @param:JsonProperty("e_icod")
+    @SerialName("e_icod")
     val eIcod: String,
-    @param:JsonProperty("e_parp")
+    @SerialName("e_parp")
     val eParp: String,
     val tvol: String,
     val tamt: String,
-    @param:JsonProperty("etyp_nm")
+    @SerialName("etyp_nm")
     val etypNm: String
 ) 

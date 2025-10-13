@@ -1,8 +1,8 @@
 package com.ietf.etfbatch.stock.dto
 
-import com.fasterxml.jackson.annotation.JsonProperty
+import kotlinx.serialization.SerialName
 
 data class KisInfoRequest(
-    @param:JsonProperty("PRDT_TYPE_CD") val marketCode: String,
-    @param:JsonProperty("PDNO") val stockCode: String,
+    @SerialName("PRDT_TYPE_CD") val marketCode: String,
+    @SerialName("PDNO") val stockCode: String,
 )

@@ -1,11 +1,17 @@
 package com.ietf.etfbatch.stock.service
 
-import com.ietf.etfbatch.httpInf.KisInterface
 import com.ietf.etfbatch.stock.dto.KisInfoOutput
 import com.ietf.etfbatch.stock.dto.KisInfoRequest
+import com.ietf.etfbatch.stock.dto.KisInfoResponse
 import com.ietf.etfbatch.stock.model.EtfList
 import com.ietf.etfbatch.stock.model.StockList
 import com.ietf.etfbatch.token.service.KisTokenService
+import io.ktor.client.*
+import io.ktor.client.call.*
+import io.ktor.client.request.post
+import io.ktor.client.request.setBody
+import io.ktor.http.headers
+import kotlinx.coroutines.runBlocking
 import kotlinx.datetime.TimeZone
 import kotlinx.datetime.toLocalDateTime
 import org.jetbrains.exposed.v1.core.*
@@ -13,13 +19,11 @@ import org.jetbrains.exposed.v1.jdbc.select
 import org.jetbrains.exposed.v1.jdbc.transactions.transaction
 import org.jetbrains.exposed.v1.jdbc.update
 import org.slf4j.LoggerFactory
-import org.springframework.stereotype.Service
 import kotlin.time.Clock
 import kotlin.time.ExperimentalTime
 
-@Service
 @OptIn(ExperimentalTime::class)
-class KisInfoService(val kisInterface: KisInterface, val kisTokenService: KisTokenService) {
+class KisInfoService(val httpClient: HttpClient, val kisTokenService: KisTokenService) {
     companion object {
         const val SEARCH_INFO_TR_ID = "CTPF1702R"
         const val MIN_INTERVAL = 112L
@@ -44,7 +48,9 @@ class KisInfoService(val kisInterface: KisInterface, val kisTokenService: KisTok
         }
 
         if (reqEtfInfoList.isNotEmpty()) {
-            val etfApiResultList = getInfo(reqEtfInfoList)
+            val etfApiResultList = runBlocking {
+                getInfo(reqEtfInfoList)
+            }
 
             transaction {
                 etfApiResultList.filter { infoOutput ->
@@ -76,7 +82,9 @@ class KisInfoService(val kisInterface: KisInterface, val kisTokenService: KisTok
         }
 
         if (reqStockInfoList.isNotEmpty()) {
-            val apiResultList = getInfo(reqStockInfoList)
+            val apiResultList = runBlocking {
+                getInfo(reqStockInfoList)
+            }
 
             transaction {
                 apiResultList.filter { infoOutput ->
@@ -109,8 +117,10 @@ class KisInfoService(val kisInterface: KisInterface, val kisTokenService: KisTok
         val stockCode: String
     )
 
-    private fun getInfo(targetList: List<StockObject>): List<KisInfoOutput> {
-        val token = kisTokenService.getKisAccessToken()
+    private suspend fun getInfo(targetList: List<StockObject>): List<KisInfoOutput> {
+        val token = transaction {
+            kisTokenService.getKisAccessToken()
+        }
         val apiResultList = mutableListOf<KisInfoOutput>()
         var marketCode: String
 
@@ -118,14 +128,19 @@ class KisInfoService(val kisInterface: KisInterface, val kisTokenService: KisTok
             val startTime = System.currentTimeMillis()
             marketCode = if (stock.market == "TSE") "515" else "512"
 
-            val kisApiResult = kisInterface.searchInfoApiCall(
-                SEARCH_INFO_TR_ID,
-                "P",
-                "Bearer $token",
-                KisInfoRequest(
-                    marketCode, stock.stockCode
-                ),
-            )
+            val kisApiResult = httpClient.post("/uapi/overseas-price/v1/quotations/search-info") {
+                headers {
+                    set("tr_id", SEARCH_INFO_TR_ID)
+                    set("Authorization", "Bearer $token")
+                    set("custtype", "P")
+                }
+
+                setBody(
+                    KisInfoRequest(
+                        marketCode, stock.stockCode
+                    )
+                )
+            }.body<KisInfoResponse>()
 
             if (kisApiResult.rtCd == "0" &&
                 kisApiResult.output != null

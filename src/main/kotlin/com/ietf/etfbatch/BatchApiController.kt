@@ -2,53 +2,69 @@ package com.ietf.etfbatch
 
 import com.ietf.etfbatch.stock.service.KisInfoService
 import com.ietf.etfbatch.stock.service.KisStockService
-import org.slf4j.LoggerFactory
-import org.springframework.http.ResponseEntity
-import org.springframework.web.bind.annotation.GetMapping
-import org.springframework.web.bind.annotation.RestController
+import com.ietf.etfbatch.token.service.KisTokenService
+import io.ktor.server.application.*
+import io.ktor.server.response.*
+import io.ktor.server.routing.*
+import org.koin.ktor.ext.inject
 
-@RestController
-class BatchApiController(
-    val kisInfoService: KisInfoService,
-    val kisStockService: KisStockService
-) {
-    companion object {
-        private val logger = LoggerFactory.getLogger(KisStockService::class.java)
-    }
+fun Application.configureRouting() {
+    val logger = environment.log
+    val kisTokenService by inject<KisTokenService>()
+    val kisInfoService by inject<KisInfoService>()
+    val kisStockService by inject<KisStockService>()
 
-    @GetMapping("/etf")
-    fun etf(): ResponseEntity<String> {
-        try {
-            kisStockService.getEtfPrice()
-        } catch (e: Exception) {
-            logger.error(e.message, e)
-            return ResponseEntity.internalServerError().build()
+    routing {
+        get("/token") {
+            try {
+                kisTokenService.getKisAccessToken()
+            } catch (e: Exception) {
+                logger.error(e.message, e)
+                call.respondText(
+                    "token 요청중 오류발생"
+                )
+            }
+
+            call.respondText("token 요청 처리됨")
         }
 
-        return ResponseEntity.ok("etf 요청 처리됨")
-    }
+        get("/etf") {
+            try {
+                kisStockService.getEtfPrice()
+            } catch (e: Exception) {
+                logger.error(e.message, e)
+                call.respondText(
+                    "etf 요청중 오류발생"
+                )
+            }
 
-    @GetMapping("/stock")
-    fun stock(): ResponseEntity<String> {
-        try {
-            kisStockService.getStockPrice()
-        } catch (e: Exception) {
-            logger.error(e.message, e)
-            return ResponseEntity.internalServerError().build()
+            call.respondText("etf 요청 처리됨")
         }
 
-        return ResponseEntity.ok("stock 요청 처리됨")
-    }
+        get("/stock") {
+            try {
+                kisStockService.getStockPrice()
+            } catch (e: Exception) {
+                logger.error(e.message, e)
+                call.respondText(
+                    "stock 요청중 오류발생"
+                )
+            }
 
-    @GetMapping("/kisInfo")
-    fun kisInfo(): ResponseEntity<String> {
-        try {
-            kisInfoService.kisInfo()
-        } catch (e: Exception) {
-            logger.error(e.message, e)
-            return ResponseEntity.internalServerError().build()
+            call.respondText("stock 요청 처리됨")
         }
 
-        return ResponseEntity.ok("kisInfo 요청 처리됨")
+        get("/kisInfo") {
+            try {
+                kisInfoService.kisInfo()
+            } catch (e: Exception) {
+                logger.error(e.message, e)
+                call.respondText(
+                    "kisInfo 요청중 오류발생"
+                )
+            }
+
+            call.respondText("kisInfo 요청 처리됨")
+        }
     }
 }

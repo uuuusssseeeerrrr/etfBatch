@@ -1,11 +1,19 @@
 package com.ietf.etfbatch
 
-import org.springframework.boot.autoconfigure.SpringBootApplication
-import org.springframework.boot.runApplication
-
-@SpringBootApplication
-class EtfBatchApplication
+import com.ietf.etfbatch.config.configureSecurity
+import com.ietf.etfbatch.config.dataSourceFactory
+import com.ietf.etfbatch.config.jsonConfig
+import com.ietf.etfbatch.config.koinConfig
+import io.ktor.server.application.*
 
 fun main(args: Array<String>) {
-    runApplication<EtfBatchApplication>(*args)
+    io.ktor.server.netty.EngineMain.main(args)
+}
+
+fun Application.module() {
+    configureSecurity()
+    dataSourceFactory.init()
+    jsonConfig()
+    configureRouting()
+    koinConfig()
 }

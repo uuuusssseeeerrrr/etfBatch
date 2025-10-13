@@ -1,24 +1,20 @@
 package com.ietf.etfbatch.token.service
 
-import com.ietf.etfbatch.httpInf.KisInterface
 import com.ietf.etfbatch.token.dto.KisTokenRequest
+import com.ietf.etfbatch.token.dto.KisTokenResponse
 import com.ietf.etfbatch.token.model.Token
+import io.ktor.client.*
+import io.ktor.client.call.*
+import io.ktor.client.request.*
+import io.ktor.client.statement.*
+import kotlinx.coroutines.runBlocking
 import org.jetbrains.exposed.v1.core.eq
 import org.jetbrains.exposed.v1.jdbc.insert
 import org.jetbrains.exposed.v1.jdbc.selectAll
 import org.jetbrains.exposed.v1.jdbc.transactions.transaction
-import org.springframework.beans.factory.annotation.Value
-import org.springframework.stereotype.Service
 import java.time.LocalDateTime
 
-@Service
-class KisTokenService(val kisInterface: KisInterface) {
-    @Value($$"${custom.kis.key}")
-    lateinit var kisKey: String
-
-    @Value($$"${custom.kis.secret}")
-    lateinit var kisSecret: String
-
+class KisTokenService(val httpClient: HttpClient) {
     fun getKisAccessToken(): String {
         val today = LocalDateTime.now().format(java.time.format.DateTimeFormatter.ofPattern("yyyyMMdd"))
         var accessToken = ""
@@ -28,8 +24,14 @@ class KisTokenService(val kisInterface: KisInterface) {
                 .where { Token.regDate eq today }
 
             if (tokenList.empty()) {
-                val kisTokenRequest = KisTokenRequest(kisKey, kisSecret)
-                val kisTokenResponse = kisInterface.tokenApiCall(kisTokenRequest)
+                val kisTokenRequest = KisTokenRequest(
+                    System.getenv("custom.kis.key"),
+                    System.getenv("custom.kis.secret")
+                )
+
+                val kisTokenResponse = runBlocking {
+                    tokenApiCall(kisTokenRequest)
+                }
 
                 if (kisTokenResponse.accessToken.isNotEmpty()) {
                     accessToken = kisTokenResponse.accessToken
@@ -45,5 +47,13 @@ class KisTokenService(val kisInterface: KisInterface) {
         }
 
         return accessToken
+    }
+
+    private suspend fun tokenApiCall(kisTokenRequest: KisTokenRequest): KisTokenResponse {
+        val response: HttpResponse = httpClient.post("/oauth2/tokenP") {
+            setBody(kisTokenRequest)
+        }
+
+        return response.body<KisTokenResponse>()
     }
 }

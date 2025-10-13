@@ -1,25 +1,29 @@
 package com.ietf.etfbatch.stock.service
 
-import com.ietf.etfbatch.httpInf.KisInterface
 import com.ietf.etfbatch.stock.dto.KisPriceDetailOutput
+import com.ietf.etfbatch.stock.dto.KisPriceDetailResponse
 import com.ietf.etfbatch.stock.model.EtfList
 import com.ietf.etfbatch.stock.model.EtfPriceHistory
 import com.ietf.etfbatch.stock.model.StockList
 import com.ietf.etfbatch.stock.model.StockPriceHistory
 import com.ietf.etfbatch.token.service.KisTokenService
+import io.ktor.client.*
+import io.ktor.client.call.*
+import io.ktor.client.request.get
+import io.ktor.client.statement.*
+import io.ktor.http.headers
+import kotlinx.coroutines.runBlocking
 import kotlinx.datetime.TimeZone
 import kotlinx.datetime.toLocalDateTime
 import org.jetbrains.exposed.v1.jdbc.batchInsert
 import org.jetbrains.exposed.v1.jdbc.select
 import org.jetbrains.exposed.v1.jdbc.transactions.transaction
 import org.slf4j.LoggerFactory
-import org.springframework.stereotype.Service
 import kotlin.time.Clock
 import kotlin.time.ExperimentalTime
 
-@Service
 @OptIn(ExperimentalTime::class)
-class KisStockService(val kisInterface: KisInterface, val kisTokenService: KisTokenService) {
+class KisStockService(val httpClient: HttpClient, val kisTokenService: KisTokenService) {
     companion object {
         const val PRICE_DETAIL_TR_ID = "HHDFS76200200"
         const val MIN_INTERVAL = 112L
@@ -37,7 +41,9 @@ class KisStockService(val kisInterface: KisInterface, val kisTokenService: KisTo
         }
 
         if (targetEtfList.isNotEmpty()) {
-            val etfApiResultList = getPriceInfo(targetEtfList)
+            val etfApiResultList = runBlocking {
+                getPriceInfo(targetEtfList)
+            }
 
             transaction {
                 EtfPriceHistory.batchInsert(etfApiResultList, shouldReturnGeneratedValues = false) { result ->
@@ -72,7 +78,9 @@ class KisStockService(val kisInterface: KisInterface, val kisTokenService: KisTo
         }
 
         if (targetStockList.isNotEmpty()) {
-            val stockApiResultList = getPriceInfo(targetStockList)
+            val stockApiResultList = runBlocking {
+                getPriceInfo(targetStockList)
+            }
 
             transaction {
                 StockPriceHistory.batchInsert(stockApiResultList, shouldReturnGeneratedValues = false) { result ->
@@ -101,18 +109,28 @@ class KisStockService(val kisInterface: KisInterface, val kisTokenService: KisTo
         val stockCode: String
     )
 
-    private fun getPriceInfo(targetList: List<StockObject>): List<KisPriceDetailOutput> {
-        val token = kisTokenService.getKisAccessToken()
+    private suspend fun getPriceInfo(targetList: List<StockObject>): List<KisPriceDetailOutput> {
+        val token = transaction {
+            kisTokenService.getKisAccessToken()
+        }
         val apiResultList = mutableListOf<KisPriceDetailOutput>()
 
         for (stock in targetList) {
             val startTime = System.currentTimeMillis()
-            val kisPriceApiResult = kisInterface.priceDetailApiCall(
-                PRICE_DETAIL_TR_ID,
-                "Bearer $token",
-                stock.market,
-                stock.stockCode
-            )
+
+            val kisPriceHttpResponse: HttpResponse = httpClient.get("/uapi/overseas-price/v1/quotations/price-detail") {
+                headers {
+                    set("tr_id", PRICE_DETAIL_TR_ID)
+                    set("Authorization", "Bearer $token")
+                }
+
+                url {
+                    parameters.append("market", stock.market)
+                    parameters.append("stock_code", stock.stockCode)
+                }
+            }
+
+            val kisPriceApiResult = kisPriceHttpResponse.body<KisPriceDetailResponse>()
 
             if (kisPriceApiResult.rtCd == "0" &&
                 kisPriceApiResult.output != null
