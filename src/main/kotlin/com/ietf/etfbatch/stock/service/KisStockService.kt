@@ -1,5 +1,6 @@
 package com.ietf.etfbatch.stock.service
 
+import com.ietf.etfbatch.config.BearerTokenProvider
 import com.ietf.etfbatch.stock.dto.KisPriceDetailOutput
 import com.ietf.etfbatch.stock.dto.KisPriceDetailResponse
 import com.ietf.etfbatch.stock.dto.StockObject
@@ -10,22 +11,23 @@ import com.ietf.etfbatch.stock.table.StockPriceHistory
 import com.ietf.etfbatch.token.service.KisTokenService
 import io.ktor.client.*
 import io.ktor.client.call.*
-import io.ktor.client.request.get
+import io.ktor.client.request.*
 import io.ktor.client.statement.*
-import io.ktor.http.headers
-import kotlinx.coroutines.flow.map
-import kotlinx.coroutines.flow.toList
 import kotlinx.datetime.TimeZone
 import kotlinx.datetime.toLocalDateTime
-import org.jetbrains.exposed.v1.r2dbc.batchInsert
-import org.jetbrains.exposed.v1.r2dbc.select
-import org.jetbrains.exposed.v1.r2dbc.transactions.suspendTransaction
+import org.jetbrains.exposed.v1.jdbc.batchInsert
+import org.jetbrains.exposed.v1.jdbc.select
+import org.jetbrains.exposed.v1.jdbc.transactions.transaction
 import org.slf4j.LoggerFactory
 import kotlin.time.Clock
 import kotlin.time.ExperimentalTime
 
 @OptIn(ExperimentalTime::class)
-class KisStockService(val httpClient: HttpClient, val kisTokenService: KisTokenService) {
+class KisStockService(
+    val httpClient: HttpClient,
+    private val tokenProvider: BearerTokenProvider,
+    private val kisTokenService: KisTokenService
+) {
     companion object {
         const val PRICE_DETAIL_TR_ID = "HHDFS76200200"
         const val MIN_INTERVAL = 112L
@@ -36,8 +38,8 @@ class KisStockService(val httpClient: HttpClient, val kisTokenService: KisTokenS
      * ETF 가격정보 가져오기
      */
     suspend fun getEtfPrice() {
-        val targetEtfList = suspendTransaction {
-            EtfList.select(EtfList.market, EtfList.stockCode).map { row ->
+        val targetEtfList = transaction {
+            EtfList.select(EtfList.market, EtfList.stockCode).limit(1).map { row ->
                 StockObject(row[EtfList.market], row[EtfList.stockCode])
             }.toList()
         }
@@ -45,7 +47,7 @@ class KisStockService(val httpClient: HttpClient, val kisTokenService: KisTokenS
         if (targetEtfList.isNotEmpty()) {
             val etfApiResultList = getPriceInfo(targetEtfList)
 
-            suspendTransaction {
+            transaction {
                 EtfPriceHistory.batchInsert(etfApiResultList, shouldReturnGeneratedValues = false) { result ->
                     this[EtfPriceHistory.market] = result.market ?: "TSE"
                     this[EtfPriceHistory.stockCode] = result.stockCode ?: ""
@@ -71,7 +73,7 @@ class KisStockService(val httpClient: HttpClient, val kisTokenService: KisTokenS
      * 종목별 가격정보 가져오기
      */
     suspend fun getStockPrice() {
-        val targetStockList = suspendTransaction {
+        val targetStockList = transaction {
             StockList.select(StockList.market, StockList.stockCode)
                 .limit(10)
                 .map { row -> StockObject(row[StockList.market], row[StockList.stockCode]) }
@@ -81,7 +83,7 @@ class KisStockService(val httpClient: HttpClient, val kisTokenService: KisTokenS
         if (targetStockList.isNotEmpty()) {
             val stockApiResultList = getPriceInfo(targetStockList)
 
-            suspendTransaction {
+            transaction {
                 StockPriceHistory.batchInsert(stockApiResultList, shouldReturnGeneratedValues = false) { result ->
                     this[StockPriceHistory.market] = result.market ?: "TSE"
                     this[StockPriceHistory.stockCode] = result.stockCode ?: ""
@@ -110,24 +112,22 @@ class KisStockService(val httpClient: HttpClient, val kisTokenService: KisTokenS
     }
 
     private suspend fun getPriceInfo(targetList: List<StockObject>): List<KisPriceDetailOutput> {
-        val token = suspendTransaction {
-            kisTokenService.getKisAccessToken()
-        }
         val apiResultList = mutableListOf<KisPriceDetailOutput>()
+
+        if (tokenProvider.loadToken() == null) {
+            kisTokenService.getToken()
+        }
 
         for (stock in targetList) {
             val startTime = System.currentTimeMillis()
 
             val kisPriceHttpResponse: HttpResponse = httpClient.get("/uapi/overseas-price/v1/quotations/price-detail") {
-                headers {
-                    set("tr_id", PRICE_DETAIL_TR_ID)
-                    set("Authorization", "Bearer $token")
+                url {
+                    parameters.append("EXCD", stock.market)
+                    parameters.append("SYMB", stock.stockCode)
                 }
 
-                url {
-                    parameters.append("market", stock.market)
-                    parameters.append("stock_code", stock.stockCode)
-                }
+                header("tr_id", PRICE_DETAIL_TR_ID)
             }
 
             val kisPriceApiResult = kisPriceHttpResponse.body<KisPriceDetailResponse>()

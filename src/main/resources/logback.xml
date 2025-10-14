@@ -9,4 +9,9 @@
     </root>
     <logger name="org.eclipse.jetty" level="INFO"/>
     <logger name="io.netty" level="INFO"/>
+    <logger name="org.jetbrains.exposed.sql.Slf4jSqlLogger" level="DEBUG"/>
+    <logger name="Exposed" level="DEBUG">
+        <appender-ref ref="STDOUT" />
+    </logger>
+    <logger name="org.mariadb.r2dbc.message.server.ErrorPacket" level="ERROR"/>
 </configuration>

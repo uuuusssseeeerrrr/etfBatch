@@ -1,23 +1,24 @@
 package com.ietf.etfbatch.config
 
 import com.typesafe.config.ConfigFactory
-import io.r2dbc.spi.IsolationLevel
-import org.jetbrains.exposed.v1.r2dbc.R2dbcDatabase
-import org.jetbrains.exposed.v1.r2dbc.R2dbcDatabaseConfig
+import org.jetbrains.exposed.v1.core.DatabaseConfig
+import org.jetbrains.exposed.v1.jdbc.Database
+import org.jetbrains.exposed.v1.jdbc.transactions.TransactionManager
 
 object DataSourceFactory {
     fun init() {
         val config = ConfigFactory.load()
 
-        R2dbcDatabase.connect(
-            driver = "mariadb",
+        val db = Database.connect(
+            driver = "org.mariadb.jdbc.Driver",
             url = config.getString("database.url"),
             user = config.getString("database.username"),
             password = config.getString("database.password"),
-            databaseConfig = R2dbcDatabaseConfig {
+            databaseConfig = DatabaseConfig {
                 defaultMaxAttempts = 3
-                defaultR2dbcIsolationLevel = IsolationLevel.READ_COMMITTED
             }
         )
+
+        TransactionManager.defaultDatabase = db
     }
 }

@@ -2,7 +2,6 @@ package com.ietf.etfbatch
 
 import com.ietf.etfbatch.stock.service.KisInfoService
 import com.ietf.etfbatch.stock.service.KisStockService
-import com.ietf.etfbatch.token.service.KisTokenService
 import io.ktor.server.application.*
 import io.ktor.server.auth.*
 import io.ktor.server.response.*
@@ -11,25 +10,11 @@ import org.koin.ktor.ext.inject
 
 fun Application.configureRouting() {
     val logger = environment.log
-    val kisTokenService by inject<KisTokenService>()
     val kisInfoService by inject<KisInfoService>()
     val kisStockService by inject<KisStockService>()
 
     routing {
         authenticate("tokenAuth") {
-            get("/token") {
-                try {
-                    kisTokenService.getKisAccessToken()
-                } catch (e: Exception) {
-                    logger.error(e.message, e)
-                    call.respondText(
-                        "token 요청중 오류발생"
-                    )
-                }
-
-                call.respondText("token 요청 처리됨")
-            }
-
             get("/etf") {
                 try {
                     kisStockService.getEtfPrice()

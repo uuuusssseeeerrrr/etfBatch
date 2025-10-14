@@ -1,62 +1,55 @@
 package com.ietf.etfbatch.token.service
 
+import com.ietf.etfbatch.config.BearerTokenProvider
 import com.ietf.etfbatch.token.dto.KisTokenRequest
 import com.ietf.etfbatch.token.dto.KisTokenResponse
-import com.ietf.etfbatch.token.table.Token
 import com.typesafe.config.ConfigFactory
 import io.ktor.client.*
 import io.ktor.client.call.*
+import io.ktor.client.engine.cio.*
+import io.ktor.client.plugins.*
+import io.ktor.client.plugins.auth.providers.*
+import io.ktor.client.plugins.contentnegotiation.*
 import io.ktor.client.request.*
 import io.ktor.client.statement.*
-import kotlinx.coroutines.flow.first
-import org.jetbrains.exposed.v1.core.eq
-import org.jetbrains.exposed.v1.r2dbc.insert
-import org.jetbrains.exposed.v1.r2dbc.selectAll
-import org.jetbrains.exposed.v1.r2dbc.transactions.suspendTransaction
-import java.time.LocalDateTime
-import java.time.format.DateTimeFormatter
+import io.ktor.http.*
+import io.ktor.serialization.kotlinx.json.*
+import kotlinx.serialization.json.Json
 
-class KisTokenService(val httpClient: HttpClient) {
-    suspend fun getKisAccessToken(): String {
-        val today = LocalDateTime.now().format(DateTimeFormatter.ofPattern("yyyyMMdd"))
-        var accessToken = ""
-        val tokenList = suspendTransaction {
-            Token.selectAll()
-                .where { Token.regDate eq today }
-        }
-
-        if (tokenList.empty()) {
+class KisTokenService(private val tokenProvider: BearerTokenProvider) {
+    suspend fun getToken(): BearerTokens {
+        if (tokenProvider.loadToken() == null) {
             val config = ConfigFactory.load()
+            val tokenRefreshClient = HttpClient(CIO) {
+                install(ContentNegotiation) {
+                    json(Json {
+                        encodeDefaults = true
+                        prettyPrint = true
+                    })
+                }
 
-            val kisTokenRequest = KisTokenRequest(
-                config.getString("custom.kis.key"),
-                config.getString("custom.kis.secret")
-            )
-
-            val kisTokenResponse = tokenApiCall(kisTokenRequest)
-
-            if (kisTokenResponse.accessToken.isNotEmpty()) {
-                accessToken = kisTokenResponse.accessToken
-
-                suspendTransaction {
-                    Token.insert {
-                        it[regDate] = today
-                        it[token] = accessToken
-                    }
+                defaultRequest {
+                    header(HttpHeaders.ContentType, "application/json; charset=utf-8")
                 }
             }
+
+            val response: HttpResponse =
+                tokenRefreshClient.post("https://openapi.koreainvestment.com:9443/oauth2/tokenP") {
+                    setBody(
+                        KisTokenRequest(
+                            appKey = config.getString("custom.kis.key"),
+                            appSecret = config.getString("custom.kis.secret")
+                        )
+                    )
+                }
+
+            val tokenResponse = response.body<KisTokenResponse>()
+            val newTokens = BearerTokens(tokenResponse.accessToken ?: "", tokenResponse.accessToken ?: "")
+            tokenProvider.saveToken(newTokens)
+
+            return newTokens
         } else {
-            accessToken = tokenList.first()[Token.token]
+            return tokenProvider.loadToken()!!
         }
-
-        return accessToken
-    }
-
-    private suspend fun tokenApiCall(kisTokenRequest: KisTokenRequest): KisTokenResponse {
-        val response: HttpResponse = httpClient.post("/oauth2/tokenP") {
-            setBody(kisTokenRequest)
-        }
-
-        return response.body<KisTokenResponse>()
     }
 }

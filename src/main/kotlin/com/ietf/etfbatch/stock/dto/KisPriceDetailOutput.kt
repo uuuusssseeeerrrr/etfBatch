@@ -1,10 +1,12 @@
 package com.ietf.etfbatch.stock.dto
 
 import kotlinx.serialization.SerialName
+import kotlinx.serialization.Serializable
 
+@Serializable
 data class KisPriceDetailOutput(
-    var market: String?,
-    var stockCode: String?,
+    var market: String? = null,
+    var stockCode: String? = null,
     val rsym: String,
     val zdiv: String,
     val curr: String,

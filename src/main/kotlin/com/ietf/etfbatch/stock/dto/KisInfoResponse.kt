@@ -1,7 +1,9 @@
 package com.ietf.etfbatch.stock.dto
 
 import kotlinx.serialization.SerialName
+import kotlinx.serialization.Serializable
 
+@Serializable
 data class KisInfoResponse(
     @SerialName("rt_cd") val rtCd: String,
     @SerialName("msg_cd") val msgCd: String,

@@ -6,27 +6,24 @@ import com.ietf.etfbatch.stock.dto.KisInfoResponse
 import com.ietf.etfbatch.stock.dto.StockObject
 import com.ietf.etfbatch.stock.table.EtfList
 import com.ietf.etfbatch.stock.table.StockList
-import com.ietf.etfbatch.token.service.KisTokenService
 import io.ktor.client.*
 import io.ktor.client.call.*
 import io.ktor.client.request.post
 import io.ktor.client.request.setBody
 import io.ktor.http.headers
 import kotlinx.coroutines.delay
-import kotlinx.coroutines.flow.map
-import kotlinx.coroutines.flow.toList
 import kotlinx.datetime.TimeZone
 import kotlinx.datetime.toLocalDateTime
 import org.jetbrains.exposed.v1.core.*
-import org.jetbrains.exposed.v1.r2dbc.select
-import org.jetbrains.exposed.v1.r2dbc.transactions.suspendTransaction
-import org.jetbrains.exposed.v1.r2dbc.update
+import org.jetbrains.exposed.v1.jdbc.select
+import org.jetbrains.exposed.v1.jdbc.transactions.transaction
+import org.jetbrains.exposed.v1.jdbc.update
 import org.slf4j.LoggerFactory
 import kotlin.time.Clock
 import kotlin.time.ExperimentalTime
 
 @OptIn(ExperimentalTime::class)
-class KisInfoService(val httpClient: HttpClient, val kisTokenService: KisTokenService) {
+class KisInfoService(val httpClient: HttpClient) {
     companion object {
         const val SEARCH_INFO_TR_ID = "CTPF1702R"
         const val MIN_INTERVAL = 112L
@@ -42,7 +39,7 @@ class KisInfoService(val httpClient: HttpClient, val kisTokenService: KisTokenSe
      * ETF 정보 가져오기
      */
     private suspend fun getEtfInfo() {
-        val reqEtfInfoList = suspendTransaction {
+        val reqEtfInfoList = transaction {
             EtfList.select(EtfList.market, EtfList.stockCode)
                 .where { (EtfList.stdPdno.isNull()) or (EtfList.stdPdno.trim().eq("")) }
                 .map { row ->
@@ -58,7 +55,7 @@ class KisInfoService(val httpClient: HttpClient, val kisTokenService: KisTokenSe
                         && !infoOutput.stockCode.isNullOrEmpty()
             }
                 .forEach { apiResult ->
-                    suspendTransaction {
+                    transaction {
                         EtfList.update({
                             EtfList.market.eq(
                                 apiResult.market!!
@@ -76,7 +73,7 @@ class KisInfoService(val httpClient: HttpClient, val kisTokenService: KisTokenSe
 
     @OptIn(ExperimentalTime::class)
     private suspend fun getStockInfo() {
-        val reqStockInfoList = suspendTransaction {
+        val reqStockInfoList = transaction {
             StockList.select(StockList.market, StockList.stockCode)
                 .where { (StockList.stdPdno.isNull()) or (StockList.stdPdno.trim().eq("")) }
                 .map { row ->
@@ -92,7 +89,7 @@ class KisInfoService(val httpClient: HttpClient, val kisTokenService: KisTokenSe
                         && !infoOutput.stockCode.isNullOrEmpty()
             }
                 .forEach { apiResult ->
-                    suspendTransaction {
+                    transaction {
                         StockList.update({
                             StockList.market.eq(apiResult.market!!) and
                                     StockList.stockCode.eq(apiResult.stockCode!!)
@@ -114,7 +111,6 @@ class KisInfoService(val httpClient: HttpClient, val kisTokenService: KisTokenSe
     }
 
     private suspend fun getInfo(targetList: List<StockObject>): List<KisInfoOutput> {
-        val token = kisTokenService.getKisAccessToken()
         val apiResultList = mutableListOf<KisInfoOutput>()
         var marketCode: String
 
@@ -125,7 +121,6 @@ class KisInfoService(val httpClient: HttpClient, val kisTokenService: KisTokenSe
             val kisApiResult = httpClient.post("/uapi/overseas-price/v1/quotations/search-info") {
                 headers {
                     set("tr_id", SEARCH_INFO_TR_ID)
-                    set("Authorization", "Bearer $token")
                     set("custtype", "P")
                 }
 
