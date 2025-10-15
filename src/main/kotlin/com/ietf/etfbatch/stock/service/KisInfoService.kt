@@ -1,6 +1,5 @@
 package com.ietf.etfbatch.stock.service
 
-import com.ietf.etfbatch.config.BearerTokenProvider
 import com.ietf.etfbatch.stock.dto.KisInfoOutput
 import com.ietf.etfbatch.stock.dto.KisInfoRequest
 import com.ietf.etfbatch.stock.dto.KisInfoResponse
@@ -10,9 +9,7 @@ import com.ietf.etfbatch.stock.table.StockList
 import com.ietf.etfbatch.token.service.KisTokenService
 import io.ktor.client.*
 import io.ktor.client.call.*
-import io.ktor.client.request.post
-import io.ktor.client.request.setBody
-import io.ktor.http.headers
+import io.ktor.client.request.*
 import kotlinx.coroutines.delay
 import kotlinx.datetime.TimeZone
 import kotlinx.datetime.toLocalDateTime
@@ -27,7 +24,6 @@ import kotlin.time.ExperimentalTime
 @OptIn(ExperimentalTime::class)
 class KisInfoService(
     val httpClient: HttpClient,
-    private val tokenProvider: BearerTokenProvider,
     private val kisTokenService: KisTokenService
 ) {
     companion object {
@@ -119,20 +115,16 @@ class KisInfoService(
     private suspend fun getInfo(targetList: List<StockObject>): List<KisInfoOutput> {
         val apiResultList = mutableListOf<KisInfoOutput>()
         var marketCode: String
-
-        if (tokenProvider.loadToken() == null || tokenProvider.loadToken()?.accessToken.isNullOrEmpty()) {
-            kisTokenService.getToken()
-        }
+        val token = kisTokenService.getKisAccessToken()
 
         for (stock in targetList) {
             val startTime = System.currentTimeMillis()
             marketCode = if (stock.market == "TSE") "515" else "512"
 
             val kisApiResult = httpClient.post("/uapi/overseas-price/v1/quotations/search-info") {
-                headers {
-                    set("tr_id", SEARCH_INFO_TR_ID)
-                    set("custtype", "P")
-                }
+                header("authorization", "Bearer $token")
+                header("tr_id", SEARCH_INFO_TR_ID)
+                header("custtype", "P")
 
                 setBody(
                     KisInfoRequest(

@@ -1,6 +1,5 @@
 package com.ietf.etfbatch.stock.service
 
-import com.ietf.etfbatch.config.BearerTokenProvider
 import com.ietf.etfbatch.stock.dto.KisPriceDetailOutput
 import com.ietf.etfbatch.stock.dto.KisPriceDetailResponse
 import com.ietf.etfbatch.stock.dto.StockObject
@@ -25,7 +24,6 @@ import kotlin.time.ExperimentalTime
 @OptIn(ExperimentalTime::class)
 class KisStockService(
     val httpClient: HttpClient,
-    private val tokenProvider: BearerTokenProvider,
     private val kisTokenService: KisTokenService
 ) {
     companion object {
@@ -39,7 +37,7 @@ class KisStockService(
      */
     suspend fun getEtfPrice() {
         val targetEtfList = transaction {
-            EtfList.select(EtfList.market, EtfList.stockCode).map { row ->
+            EtfList.select(EtfList.market, EtfList.stockCode).limit(1).map { row ->
                 StockObject(row[EtfList.market], row[EtfList.stockCode])
             }.toList()
         }
@@ -112,10 +110,7 @@ class KisStockService(
 
     private suspend fun getPriceInfo(targetList: List<StockObject>): List<KisPriceDetailOutput> {
         val apiResultList = mutableListOf<KisPriceDetailOutput>()
-
-        if (tokenProvider.loadToken() == null || tokenProvider.loadToken()?.accessToken.isNullOrEmpty()) {
-            kisTokenService.getToken()
-        }
+        val token = kisTokenService.getKisAccessToken()
 
         for (stock in targetList) {
             val startTime = System.currentTimeMillis()
@@ -126,6 +121,7 @@ class KisStockService(
                     parameters.append("SYMB", stock.stockCode)
                 }
 
+                header("authorization", "Bearer $token")
                 header("tr_id", PRICE_DETAIL_TR_ID)
             }
 
