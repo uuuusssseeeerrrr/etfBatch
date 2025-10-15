@@ -1,0 +1,26 @@
+# Version control
+.git
+.gitignore
+
+# IDE and editor
+.idea/
+.vscode/
+
+# Build artifacts
+build/
+dist/
+bin/
+obj/
+
+# Dependencies
+node_modules/
+venv/
+.venv/
+
+# Logs and temporary files
+*.log
+*.tmp
+.DS_Store
+
+HELP.md
+LICENSE
