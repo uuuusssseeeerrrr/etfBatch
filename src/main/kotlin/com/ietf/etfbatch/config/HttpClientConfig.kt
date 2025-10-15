@@ -47,7 +47,7 @@ val restClient = module {
             }
 
             install(Logging) {
-                level = LogLevel.INFO
+                level = LogLevel.ALL
                 logger = Logger.DEFAULT
             }
         }
