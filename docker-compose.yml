@@ -12,6 +12,8 @@ services:
       - KIS_KEY
       - KIS_SECRET
       - BATCHTOKEN
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
 
 secrets:
   DB_URL:
