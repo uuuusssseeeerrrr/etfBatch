@@ -5,6 +5,8 @@ services:
     image: etfbatch
     ports:
       - "7777:7777"
+    environment:
+      TZ: Asia/Seoul
     secrets:
       - DB_URL
       - DB_USERNAME
