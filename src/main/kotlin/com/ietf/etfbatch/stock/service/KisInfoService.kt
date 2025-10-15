@@ -1,11 +1,13 @@
 package com.ietf.etfbatch.stock.service
 
+import com.ietf.etfbatch.config.BearerTokenProvider
 import com.ietf.etfbatch.stock.dto.KisInfoOutput
 import com.ietf.etfbatch.stock.dto.KisInfoRequest
 import com.ietf.etfbatch.stock.dto.KisInfoResponse
 import com.ietf.etfbatch.stock.dto.StockObject
 import com.ietf.etfbatch.stock.table.EtfList
 import com.ietf.etfbatch.stock.table.StockList
+import com.ietf.etfbatch.token.service.KisTokenService
 import io.ktor.client.*
 import io.ktor.client.call.*
 import io.ktor.client.request.post
@@ -23,7 +25,11 @@ import kotlin.time.Clock
 import kotlin.time.ExperimentalTime
 
 @OptIn(ExperimentalTime::class)
-class KisInfoService(val httpClient: HttpClient) {
+class KisInfoService(
+    val httpClient: HttpClient,
+    private val tokenProvider: BearerTokenProvider,
+    private val kisTokenService: KisTokenService
+) {
     companion object {
         const val SEARCH_INFO_TR_ID = "CTPF1702R"
         const val MIN_INTERVAL = 112L
@@ -113,6 +119,10 @@ class KisInfoService(val httpClient: HttpClient) {
     private suspend fun getInfo(targetList: List<StockObject>): List<KisInfoOutput> {
         val apiResultList = mutableListOf<KisInfoOutput>()
         var marketCode: String
+
+        if (tokenProvider.loadToken() == null || tokenProvider.loadToken()?.accessToken.isNullOrEmpty()) {
+            kisTokenService.getToken()
+        }
 
         for (stock in targetList) {
             val startTime = System.currentTimeMillis()

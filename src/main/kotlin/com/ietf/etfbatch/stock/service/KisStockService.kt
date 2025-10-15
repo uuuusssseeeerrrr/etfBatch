@@ -39,7 +39,7 @@ class KisStockService(
      */
     suspend fun getEtfPrice() {
         val targetEtfList = transaction {
-            EtfList.select(EtfList.market, EtfList.stockCode).limit(1).map { row ->
+            EtfList.select(EtfList.market, EtfList.stockCode).map { row ->
                 StockObject(row[EtfList.market], row[EtfList.stockCode])
             }.toList()
         }
@@ -75,7 +75,6 @@ class KisStockService(
     suspend fun getStockPrice() {
         val targetStockList = transaction {
             StockList.select(StockList.market, StockList.stockCode)
-                .limit(10)
                 .map { row -> StockObject(row[StockList.market], row[StockList.stockCode]) }
                 .toList()
         }
@@ -114,7 +113,7 @@ class KisStockService(
     private suspend fun getPriceInfo(targetList: List<StockObject>): List<KisPriceDetailOutput> {
         val apiResultList = mutableListOf<KisPriceDetailOutput>()
 
-        if (tokenProvider.loadToken() == null) {
+        if (tokenProvider.loadToken() == null || tokenProvider.loadToken()?.accessToken.isNullOrEmpty()) {
             kisTokenService.getToken()
         }
 
