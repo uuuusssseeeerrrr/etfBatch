@@ -1,0 +1,28 @@
+version: "3.10"
+
+services:
+  etfbatch:
+    image: etfbatch
+    ports:
+      - "7777:7777"
+    secrets:
+      - DB_URL
+      - DB_USERNAME
+      - DB_PASSWORD
+      - KIS_KEY
+      - KIS_SECRET
+      - BATCHTOKEN
+
+secrets:
+  DB_URL:
+    external: true
+  DB_USERNAME:
+    external: true
+  DB_PASSWORD:
+    external: true
+  KIS_KEY:
+    external: true
+  KIS_SECRET:
+    external: true
+  BATCHTOKEN:
+    external: true

@@ -8,6 +8,13 @@ group = "com.ietf"
 version = "1.0"
 description = "etfBatch"
 
+tasks {
+    shadowJar {
+        archiveFileName.set("etfBatch.jar")
+        mergeServiceFiles()
+    }
+}
+
 repositories {
     mavenCentral()
 }
