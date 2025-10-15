@@ -37,7 +37,7 @@ class KisStockService(
      */
     suspend fun getEtfPrice() {
         val targetEtfList = transaction {
-            EtfList.select(EtfList.market, EtfList.stockCode).limit(1).map { row ->
+            EtfList.select(EtfList.market, EtfList.stockCode).map { row ->
                 StockObject(row[EtfList.market], row[EtfList.stockCode])
             }.toList()
         }
