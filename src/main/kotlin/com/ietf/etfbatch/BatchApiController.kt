@@ -2,6 +2,7 @@ package com.ietf.etfbatch
 
 import com.ietf.etfbatch.stock.service.KisInfoService
 import com.ietf.etfbatch.stock.service.KisStockService
+import com.ietf.etfbatch.stock.service.StockRemoveService
 import io.ktor.server.application.*
 import io.ktor.server.auth.*
 import io.ktor.server.response.*
@@ -12,6 +13,7 @@ fun Application.configureRouting() {
     val logger = environment.log
     val kisInfoService by inject<KisInfoService>()
     val kisStockService by inject<KisStockService>()
+    val stockRemoveService by inject<StockRemoveService>()
 
     routing {
         authenticate("tokenAuth") {
@@ -52,6 +54,19 @@ fun Application.configureRouting() {
                 }
 
                 call.respondText("kisInfo 요청 처리됨")
+            }
+
+            get("/removeOldHistory") {
+                try {
+                    stockRemoveService.removeOldHistory()
+                } catch (e: Exception) {
+                    logger.error(e.message, e)
+                    call.respondText(
+                        "오래된데이터 삭제완료중 오류발생"
+                    )
+                }
+
+                call.respondText("오래된데이터 삭제완료")
             }
         }
     }
