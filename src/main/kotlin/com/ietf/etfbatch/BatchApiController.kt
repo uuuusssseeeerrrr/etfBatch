@@ -1,5 +1,6 @@
 package com.ietf.etfbatch
 
+import com.ietf.etfbatch.rate.service.RateService
 import com.ietf.etfbatch.stock.service.KisInfoService
 import com.ietf.etfbatch.stock.service.KisStockService
 import com.ietf.etfbatch.stock.service.StockRemoveService
@@ -14,6 +15,7 @@ fun Application.configureRouting() {
     val kisInfoService by inject<KisInfoService>()
     val kisStockService by inject<KisStockService>()
     val stockRemoveService by inject<StockRemoveService>()
+    val rateService by inject<RateService>()
 
     routing {
         authenticate("tokenAuth") {
@@ -67,6 +69,19 @@ fun Application.configureRouting() {
                 }
 
                 call.respondText("오래된데이터 삭제완료")
+            }
+
+            get("/rate") {
+                try {
+                    rateService.getRate()
+                } catch (e: Exception) {
+                    logger.error(e.message, e)
+                    call.respondText(
+                        "환율조회중 오류발생"
+                    )
+                }
+
+                call.respondText("환율조회완료")
             }
         }
     }
