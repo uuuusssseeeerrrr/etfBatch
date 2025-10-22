@@ -4,8 +4,8 @@ import com.ietf.etfbatch.stock.dto.KisInfoOutput
 import com.ietf.etfbatch.stock.dto.KisInfoRequest
 import com.ietf.etfbatch.stock.dto.KisInfoResponse
 import com.ietf.etfbatch.stock.dto.StockObject
-import com.ietf.etfbatch.stock.table.EtfList
-import com.ietf.etfbatch.stock.table.StockList
+import com.ietf.etfbatch.table.EtfList
+import com.ietf.etfbatch.table.StockList
 import com.ietf.etfbatch.token.service.KisTokenService
 import io.ktor.client.*
 import io.ktor.client.call.*

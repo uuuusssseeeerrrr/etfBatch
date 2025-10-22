@@ -1,5 +1,6 @@
 package com.ietf.etfbatch
 
+import com.ietf.etfbatch.etf.service.EtfStockListInfoService
 import com.ietf.etfbatch.rate.service.RateService
 import com.ietf.etfbatch.stock.service.KisInfoService
 import com.ietf.etfbatch.stock.service.KisStockService
@@ -16,6 +17,7 @@ fun Application.configureRouting() {
     val kisStockService by inject<KisStockService>()
     val stockRemoveService by inject<StockRemoveService>()
     val rateService by inject<RateService>()
+    val etfStockListInfoService by inject<EtfStockListInfoService>()
 
     routing {
         authenticate("tokenAuth") {
@@ -82,6 +84,19 @@ fun Application.configureRouting() {
                 }
 
                 call.respondText("환율조회완료")
+            }
+
+            get("/etfStock") {
+                try {
+                    etfStockListInfoService.etfStockListInfo()
+                } catch (e: Exception) {
+                    logger.error(e.message, e)
+                    call.respondText(
+                        "ETF 비중정보 입력중 오류발생"
+                    )
+                }
+
+                call.respondText("ETF 비중정보 입력완료")
             }
         }
     }

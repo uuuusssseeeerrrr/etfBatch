@@ -4,6 +4,7 @@ kotlin = "2.2.20"
 ktor = "3.3.1"
 logback = "1.5.19"
 koin-bom = "4.1.1"
+poi = "5.4.1"
 
 [libraries]
 ktor-server-core = { module = "io.ktor:ktor-server-core", version.ref = "ktor" }
@@ -34,6 +35,10 @@ koin-logger-slf4j = { module = "io.insert-koin:koin-logger-slf4j" }
 
 ktor-server-test-host = { module = "io.ktor:ktor-server-test-host", version.ref = "ktor" }
 kotlin-test = { module = "org.jetbrains.kotlin:kotlin-test", version.ref = "kotlin" }
+
+poi-core = { module = "org.apache.poi:poi", version.ref = "poi" }
+poi-ooxml = { module = "org.apache.poi:poi-ooxml", version.ref = "poi" }
+log4j-to-slf4j = { module = "org.apache.logging.log4j:log4j-to-slf4j", version = "2.25.2" }
 
 [plugins]
 kotlin-jvm = { id = "org.jetbrains.kotlin.jvm", version.ref = "kotlin" }

@@ -1,4 +1,4 @@
-package com.ietf.etfbatch.token.table
+package com.ietf.etfbatch.table
 
 import org.jetbrains.exposed.v1.core.Column
 import org.jetbrains.exposed.v1.core.Table

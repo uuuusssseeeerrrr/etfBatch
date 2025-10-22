@@ -1,7 +1,7 @@
 package com.ietf.etfbatch.rate.service
 
 import com.ietf.etfbatch.rate.dto.WiseRateResponse
-import com.ietf.etfbatch.rate.table.Rate
+import com.ietf.etfbatch.table.Rate
 import com.typesafe.config.ConfigFactory
 import io.ktor.client.*
 import io.ktor.client.call.*

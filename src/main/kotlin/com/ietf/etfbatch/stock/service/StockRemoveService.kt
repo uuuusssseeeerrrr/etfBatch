@@ -1,8 +1,8 @@
 package com.ietf.etfbatch.stock.service
 
-import com.ietf.etfbatch.stock.table.EtfPriceHistory
-import com.ietf.etfbatch.stock.table.StockPriceHistory
-import com.ietf.etfbatch.token.table.Token
+import com.ietf.etfbatch.table.EtfPriceHistory
+import com.ietf.etfbatch.table.StockPriceHistory
+import com.ietf.etfbatch.table.Token
 import kotlinx.datetime.*
 import org.jetbrains.exposed.v1.core.lessEq
 import org.jetbrains.exposed.v1.jdbc.deleteWhere

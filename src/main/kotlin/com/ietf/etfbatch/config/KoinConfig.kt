@@ -1,5 +1,6 @@
 package com.ietf.etfbatch.config
 
+import com.ietf.etfbatch.etf.service.EtfStockListInfoService
 import com.ietf.etfbatch.rate.service.RateService
 import com.ietf.etfbatch.stock.service.KisInfoService
 import com.ietf.etfbatch.stock.service.KisStockService
@@ -18,6 +19,7 @@ fun Application.koinConfig() {
         singleOf(::KisStockService)
         singleOf(::StockRemoveService)
         singleOf(::RateService)
+        singleOf(::EtfStockListInfoService)
     }
 
     install(Koin) {

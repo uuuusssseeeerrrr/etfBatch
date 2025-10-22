@@ -44,6 +44,9 @@ dependencies {
     implementation(libs.koin.core)
     implementation(libs.koin.ktor)
     implementation(libs.koin.logger.slf4j)
+    implementation(libs.poi.core)
+    implementation(libs.poi.ooxml)
+    implementation(libs.log4j.to.slf4j)
     testImplementation(libs.ktor.server.test.host)
     testImplementation(libs.kotlin.test)
 }

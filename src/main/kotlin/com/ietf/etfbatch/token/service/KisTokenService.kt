@@ -2,7 +2,7 @@ package com.ietf.etfbatch.token.service
 
 import com.ietf.etfbatch.token.dto.KisTokenRequest
 import com.ietf.etfbatch.token.dto.KisTokenResponse
-import com.ietf.etfbatch.token.table.Token
+import com.ietf.etfbatch.table.Token
 import com.typesafe.config.ConfigFactory
 import io.ktor.client.*
 import io.ktor.client.call.*

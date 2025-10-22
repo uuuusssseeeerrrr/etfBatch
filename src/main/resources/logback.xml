@@ -13,5 +13,4 @@
     <logger name="Exposed" level="INFO">
         <appender-ref ref="STDOUT" />
     </logger>
-    <logger name="org.mariadb.r2dbc.message.server.ErrorPacket" level="ERROR"/>
 </configuration>

@@ -1,4 +1,4 @@
-package com.ietf.etfbatch.rate.table
+package com.ietf.etfbatch.table
 
 import org.jetbrains.exposed.v1.core.Table
 import org.jetbrains.exposed.v1.datetime.datetime

@@ -3,10 +3,10 @@ package com.ietf.etfbatch.stock.service
 import com.ietf.etfbatch.stock.dto.KisPriceDetailOutput
 import com.ietf.etfbatch.stock.dto.KisPriceDetailResponse
 import com.ietf.etfbatch.stock.dto.StockObject
-import com.ietf.etfbatch.stock.table.EtfList
-import com.ietf.etfbatch.stock.table.EtfPriceHistory
-import com.ietf.etfbatch.stock.table.StockList
-import com.ietf.etfbatch.stock.table.StockPriceHistory
+import com.ietf.etfbatch.table.EtfList
+import com.ietf.etfbatch.table.EtfPriceHistory
+import com.ietf.etfbatch.table.StockList
+import com.ietf.etfbatch.table.StockPriceHistory
 import com.ietf.etfbatch.token.service.KisTokenService
 import io.ktor.client.*
 import io.ktor.client.call.*
