@@ -9,4 +9,3 @@ services:
       TZ: Asia/Seoul
     extra_hosts:
       - "host.docker.internal:host-gateway"
-
