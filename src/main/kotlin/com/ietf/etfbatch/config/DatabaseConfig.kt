@@ -7,7 +7,7 @@ import org.jetbrains.exposed.v1.jdbc.transactions.TransactionManager
 object DataSourceFactory {
     fun init() {
         val isDocker = System.getenv("DOCKER_ENV")?.toBoolean() ?: false
-        val dbUrlKey = if (isDocker) "DB_URL_DOCKER" else "DB_URL"
+        val dbUrlKey = if (isDocker) "db_url_docker" else "db_url"
 
         val db = Database.connect(
             driver = "org.mariadb.jdbc.Driver",
