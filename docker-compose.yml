@@ -6,6 +6,8 @@ services:
     ports:
       - "7777:7777"
     environment:
-      TZ: Asia/Seoul
+      - OCI_CONFIG_FILE=/root/.oci/config
     extra_hosts:
       - "host.docker.internal:host-gateway"
+    volumes:
+      - ~/.oci:/root/.oci:ro
