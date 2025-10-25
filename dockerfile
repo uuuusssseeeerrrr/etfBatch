@@ -10,7 +10,7 @@ FROM amazoncorretto:21-alpine
 RUN apk add --no-cache tzdata
 
 WORKDIR /app
-COPY ~/simplex.der /app/simplex.der
+COPY /app/simplex.der ~/simplex.der
 COPY --from=builder /app/build/libs/etfBatch.jar build/libs/etfBatch.jar
 
 RUN keytool -importcert \
