@@ -1,9 +1,9 @@
 package com.ietf.etfbatch.token.service
 
+import com.ietf.etfbatch.config.VaultConfig
+import com.ietf.etfbatch.table.Token
 import com.ietf.etfbatch.token.dto.KisTokenRequest
 import com.ietf.etfbatch.token.dto.KisTokenResponse
-import com.ietf.etfbatch.table.Token
-import com.typesafe.config.ConfigFactory
 import io.ktor.client.*
 import io.ktor.client.call.*
 import io.ktor.client.request.*
@@ -47,13 +47,11 @@ class KisTokenService(val httpClient: HttpClient) {
     }
 
     private suspend fun tokenApiCall(): KisTokenResponse {
-        val config = ConfigFactory.load()
-
         val response: HttpResponse = httpClient.post("/oauth2/tokenP") {
             setBody(
                 KisTokenRequest(
-                    appKey = config.getString("custom.kis.key"),
-                    appSecret = config.getString("custom.kis.secret")
+                    appKey = VaultConfig.getVaultSecret("kis_key"),
+                    appSecret = VaultConfig.getVaultSecret("kis_secret")
                 )
             )
 

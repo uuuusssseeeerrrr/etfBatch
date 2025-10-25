@@ -47,6 +47,12 @@ dependencies {
     implementation(libs.poi.core)
     implementation(libs.poi.ooxml)
     implementation(libs.log4j.to.slf4j)
+    implementation(project.dependencies.platform(libs.oci.sdk.bom))
+    implementation(libs.oci.sdk.secrets)
+    implementation(libs.oci.sdk.jersey3)
+    implementation(libs.juniversalchardet)
+
+
     testImplementation(libs.ktor.server.test.host)
     testImplementation(libs.kotlin.test)
 }

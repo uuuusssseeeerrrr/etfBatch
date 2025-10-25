@@ -12,7 +12,6 @@ RUN apk add --no-cache tzdata
 WORKDIR /app
 COPY /cacert/simplex.der /tmp/simplex.der
 COPY --from=builder /app/build/libs/etfBatch.jar build/libs/etfBatch.jar
-COPY entrypoint.sh /app/entrypoint.sh
 
 RUN keytool -importcert \
     -file /tmp/simplex.der \
@@ -21,6 +20,5 @@ RUN keytool -importcert \
     -storepass changeit \
     -noprompt
 
-RUN chmod +x /app/entrypoint.sh
 EXPOSE 7777
-ENTRYPOINT ["/app/entrypoint.sh"]
+CMD ["java", "-server", "-XX:TieredStopAtLevel=1", "-jar", "build/libs/etfBatch.jar"]

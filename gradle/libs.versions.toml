@@ -40,6 +40,12 @@ poi-core = { module = "org.apache.poi:poi", version.ref = "poi" }
 poi-ooxml = { module = "org.apache.poi:poi-ooxml", version.ref = "poi" }
 log4j-to-slf4j = { module = "org.apache.logging.log4j:log4j-to-slf4j", version = "2.25.2" }
 
+oci-sdk-bom = { module = "com.oracle.oci.sdk:oci-java-sdk-bom", version = "3.74.3" }
+oci-sdk-secrets = { module = "com.oracle.oci.sdk:oci-java-sdk-secrets" }
+oci-sdk-jersey3 = { module = "com.oracle.oci.sdk:oci-java-sdk-common-httpclient-jersey3" }
+
+juniversalchardet = { module = "com.github.albfernandez:juniversalchardet", version = "2.5.0" }
+
 [plugins]
 kotlin-jvm = { id = "org.jetbrains.kotlin.jvm", version.ref = "kotlin" }
 ktor = { id = "io.ktor.plugin", version.ref = "ktor" }

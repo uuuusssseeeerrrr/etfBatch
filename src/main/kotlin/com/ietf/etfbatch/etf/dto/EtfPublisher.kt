@@ -18,7 +18,7 @@ enum class EtfPublisher(
     ASSET(
         "asset",
         "https://www.am-one.co.jp/fund/csv/313008/313008_pcf.csv",
-        18
+        20
     ),
     MITSUBISHI(
         "mitsubishi",
@@ -33,6 +33,6 @@ enum class EtfPublisher(
     SIMPLEX(
         "simplex",
         "https://www.simplexasset.com/etf/Doc/WEB_%E8%A8%AD%E5%AE%9A%E8%A7%A3%E7%B4%84PF",
-        3
+        2
     );
 }

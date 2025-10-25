@@ -1,6 +1,5 @@
 package com.ietf.etfbatch.config
 
-import com.typesafe.config.ConfigFactory
 import io.ktor.client.*
 import io.ktor.client.engine.cio.*
 import io.ktor.client.plugins.*
@@ -12,7 +11,6 @@ import kotlinx.serialization.json.Json
 import org.koin.dsl.module
 
 val restClient = module {
-    val config = ConfigFactory.load()
     single {
         HttpClient(CIO) {
             install(ContentNegotiation) {
@@ -30,8 +28,8 @@ val restClient = module {
                     append(HttpHeaders.ContentType, "application/json; charset=utf-8")
 
                     if (!url.encodedPath.contains("/token")) {
-                        append("appkey", config.getString("custom.kis.key"))
-                        append("appsecret", config.getString("custom.kis.secret"))
+                        append("appkey", VaultConfig.getVaultSecret("kis_key"))
+                        append("appsecret", VaultConfig.getVaultSecret("kis_secret"))
                     }
                 }
             }

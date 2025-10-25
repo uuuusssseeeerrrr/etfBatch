@@ -1,5 +1,7 @@
 package com.ietf.etfbatch.etf.service
 
+import com.ietf.etfbatch.table.EtfStockListRecord
+
 interface ProcessingData {
-    fun process()
+    suspend fun process(data: Map<String, List<String>>): List<EtfStockListRecord>
 }

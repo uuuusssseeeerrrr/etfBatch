@@ -7,29 +7,6 @@ services:
       - "7777:7777"
     environment:
       TZ: Asia/Seoul
-    secrets:
-      - DB_URL
-      - DB_USERNAME
-      - DB_PASSWORD
-      - KIS_KEY
-      - KIS_SECRET
-      - BATCHTOKEN
-      - WISE_KEY
     extra_hosts:
       - "host.docker.internal:host-gateway"
 
-secrets:
-  DB_URL:
-    external: true
-  DB_USERNAME:
-    external: true
-  DB_PASSWORD:
-    external: true
-  KIS_KEY:
-    external: true
-  KIS_SECRET:
-    external: true
-  BATCHTOKEN:
-    external: true
-  WISE_KEY:
-    external: true

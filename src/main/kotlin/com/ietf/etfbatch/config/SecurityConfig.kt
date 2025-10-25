@@ -4,7 +4,7 @@ import io.ktor.server.application.*
 import io.ktor.server.auth.*
 
 fun Application.configureSecurity() {
-    val token = environment.config.property("custom.batchToken").getString()
+    val token = VaultConfig.getVaultSecret("batchtoken")
 
     install(Authentication) {
         bearer("tokenAuth") {

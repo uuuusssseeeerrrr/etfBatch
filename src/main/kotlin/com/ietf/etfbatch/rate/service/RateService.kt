@@ -1,8 +1,8 @@
 package com.ietf.etfbatch.rate.service
 
+import com.ietf.etfbatch.config.VaultConfig
 import com.ietf.etfbatch.rate.dto.WiseRateResponse
 import com.ietf.etfbatch.table.Rate
-import com.typesafe.config.ConfigFactory
 import io.ktor.client.*
 import io.ktor.client.call.*
 import io.ktor.client.engine.cio.*
@@ -20,8 +20,6 @@ import kotlin.time.ExperimentalTime
 
 class RateService {
     private val httpClient = HttpClient(CIO) {
-        val config = ConfigFactory.load()
-
         install(ContentNegotiation) {
             json(Json {
                 encodeDefaults = true
@@ -31,7 +29,7 @@ class RateService {
         }
 
         defaultRequest {
-            header("Authorization", "Bearer ${config.getString("custom.wise.key")}")
+            header("Authorization", "Bearer ${VaultConfig.getVaultSecret("wise_key")}")
         }
     }
 

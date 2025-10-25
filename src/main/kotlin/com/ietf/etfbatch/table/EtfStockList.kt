@@ -11,3 +11,9 @@ object EtfStockList : Table("etf_stock_list") {
     val etfPercent = float("etf_percent").nullable()
     override val primaryKey = PrimaryKey(market, etfStockCode, stockCode)
 }
+
+data class EtfStockListRecord(
+    val etfStockCode: String,
+    val stockCode: String,
+    val etfPercent: Float?
+)
