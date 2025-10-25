@@ -3,9 +3,11 @@ version: "3.10"
 services:
   etfbatch:
     image: etfbatch
+    container_name: batch_etfbatch
     ports:
       - "7777:7777"
     environment:
+      - DOCKER_ENV=true
       - OCI_CONFIG_FILE=/root/.oci/config
     extra_hosts:
       - "host.docker.internal:host-gateway"
