@@ -52,74 +52,74 @@ class EtfStockListInfoService : KoinComponent {
 
         coroutineScope {
             //파일 다운로드
-//            val deferredDownloads: List<Deferred<Unit>> = etfList.map { row ->
-//                async(Dispatchers.IO) {
-//                    when {
-//                        row[EtfList.companyName]!!.startsWith("nomura", true) -> {
-//                            downloadExcelFile(
-//                                EtfPublisher.NOMURA.downloadUrl.format(row[EtfList.stockCode]),
-//                                EtfPublisher.NOMURA.folderName,
-//                                "${row[EtfList.stockCode]}_data.xlsx"
-//                            )
-//                        }
-//
-//                        row[EtfList.companyName]!!.startsWith("global", true) -> {
-//                            downloadExcelFile(
-//                                EtfPublisher.GLOBALX.downloadUrl.format(row[EtfList.stockCode]),
-//                                EtfPublisher.GLOBALX.folderName,
-//                                "${row[EtfList.stockCode]}_data.csv"
-//                            )
-//                        }
-//
-//                        row[EtfList.companyName]!!.startsWith("asset", true) -> {
-//                            downloadExcelFile(
-//                                EtfPublisher.ASSET.downloadUrl,
-//                                EtfPublisher.ASSET.folderName,
-//                                "${row[EtfList.stockCode]}_data.csv"
-//                            )
-//                        }
-//
-//                        row[EtfList.companyName]!!.startsWith("mitsu", true) -> {
-//                            downloadExcelFile(
-//                                EtfPublisher.MITSUBISHI.downloadUrl.format(row[EtfList.stockCode]),
-//                                EtfPublisher.MITSUBISHI.folderName,
-//                                "${row[EtfList.stockCode]}_data.csv"
-//                            )
-//                        }
-//
-//                        row[EtfList.companyName]!!.startsWith("amova", true) -> {
-//                            downloadExcelFile(
-//                                EtfPublisher.AMOVA.downloadUrl.format(
-//                                    row[EtfList.stockCode], today.format(DateTimeFormatter.ofPattern("yyyyMM"))
-//                                ),
-//                                EtfPublisher.AMOVA.folderName,
-//                                "${row[EtfList.stockCode]}_data.xls"
-//                            )
-//                        }
-//
-//                        row[EtfList.companyName]!!.startsWith("simplex", true) -> {
-//                            downloadExcelFile(
-//                                "${EtfPublisher.SIMPLEX.downloadUrl}${today.format(DateTimeFormatter.ofPattern("yyyyMMdd"))}.xlsx",
-//                                EtfPublisher.SIMPLEX.folderName,
-//                                "${row[EtfList.stockCode]}_data.xlsx"
-//                            )
-//                        }
-//                    }
-//                }
-//            }
-//
-//            deferredDownloads.awaitAll()
-//
+            val deferredDownloads: List<Deferred<Unit>> = etfList.map { row ->
+                async(Dispatchers.IO) {
+                    when {
+                        row[EtfList.companyName]!!.startsWith("nomura", true) -> {
+                            downloadExcelFile(
+                                EtfPublisher.NOMURA.downloadUrl.format(row[EtfList.stockCode]),
+                                EtfPublisher.NOMURA.folderName,
+                                "${row[EtfList.stockCode]}_data.xlsx"
+                            )
+                        }
+
+                        row[EtfList.companyName]!!.startsWith("global", true) -> {
+                            downloadExcelFile(
+                                EtfPublisher.GLOBALX.downloadUrl.format(row[EtfList.stockCode]),
+                                EtfPublisher.GLOBALX.folderName,
+                                "${row[EtfList.stockCode]}_data.csv"
+                            )
+                        }
+
+                        row[EtfList.companyName]!!.startsWith("asset", true) -> {
+                            downloadExcelFile(
+                                EtfPublisher.ASSET.downloadUrl,
+                                EtfPublisher.ASSET.folderName,
+                                "${row[EtfList.stockCode]}_data.csv"
+                            )
+                        }
+
+                        row[EtfList.companyName]!!.startsWith("mitsu", true) -> {
+                            downloadExcelFile(
+                                EtfPublisher.MITSUBISHI.downloadUrl.format(row[EtfList.stockCode]),
+                                EtfPublisher.MITSUBISHI.folderName,
+                                "${row[EtfList.stockCode]}_data.csv"
+                            )
+                        }
+
+                        row[EtfList.companyName]!!.startsWith("amova", true) -> {
+                            downloadExcelFile(
+                                EtfPublisher.AMOVA.downloadUrl.format(
+                                    row[EtfList.stockCode], today.format(DateTimeFormatter.ofPattern("yyyyMM"))
+                                ),
+                                EtfPublisher.AMOVA.folderName,
+                                "${row[EtfList.stockCode]}_data.xls"
+                            )
+                        }
+
+                        row[EtfList.companyName]!!.startsWith("simplex", true) -> {
+                            downloadExcelFile(
+                                "${EtfPublisher.SIMPLEX.downloadUrl}${today.format(DateTimeFormatter.ofPattern("yyyyMMdd"))}.xlsx",
+                                EtfPublisher.SIMPLEX.folderName,
+                                "${row[EtfList.stockCode]}_data.xlsx"
+                            )
+                        }
+                    }
+                }
+            }
+
+            deferredDownloads.awaitAll()
+
             val dataList = mutableListOf<EtfStockListRecord>()
-//
-//            // 엑셀파일 읽기
+
+            // 엑셀파일 읽기
             val nomuraData = readDirectoryToStringList(EtfPublisher.NOMURA.folderName, EtfPublisher.NOMURA.skip)
             val globalData = readDirectoryToStringList(EtfPublisher.GLOBALX.folderName, EtfPublisher.GLOBALX.skip)
             val assetData = readDirectoryToStringList(EtfPublisher.ASSET.folderName, EtfPublisher.ASSET.skip)
             val mitsuData = readDirectoryToStringList(EtfPublisher.MITSUBISHI.folderName, EtfPublisher.MITSUBISHI.skip)
             val amovaData = readDirectoryToStringList(EtfPublisher.AMOVA.folderName, EtfPublisher.AMOVA.skip)
             val simplexData = readDirectoryToStringList(EtfPublisher.SIMPLEX.folderName, EtfPublisher.SIMPLEX.skip)
-//
+
             dataList.addAll(processorNomura.process(nomuraData))
             dataList.addAll(processorGlobalx.process(globalData))
             dataList.addAll(processorAsset.process(assetData))
