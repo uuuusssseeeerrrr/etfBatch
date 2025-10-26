@@ -14,3 +14,4 @@ services:
       - "host.docker.internal:host-gateway"
     volumes:
       - ~/.oci:/root/.oci:ro
+      - /home/rocky/excel:/home/rocky/excel
