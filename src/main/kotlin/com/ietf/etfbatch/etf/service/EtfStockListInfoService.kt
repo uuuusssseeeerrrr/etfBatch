@@ -7,6 +7,7 @@ import com.ietf.etfbatch.table.EtfStockListRecord
 import io.ktor.client.*
 import io.ktor.client.call.*
 import io.ktor.client.engine.cio.*
+import io.ktor.client.plugins.*
 import io.ktor.client.request.*
 import io.ktor.client.statement.*
 import io.ktor.http.*
@@ -163,7 +164,11 @@ class EtfStockListInfoService : KoinComponent {
     }
 
     private suspend fun downloadExcelFile(fileUrl: String, folderName: String, fileNm: String) {
-        HttpClient(CIO).use { client ->
+        HttpClient(CIO) {
+            install(HttpTimeout) {
+                requestTimeoutMillis = 30000
+            }
+        }.use { client ->
             try {
                 val response: HttpResponse = client.get(fileUrl)
 
@@ -210,6 +215,7 @@ class EtfStockListInfoService : KoinComponent {
 
     private fun readDataFile(file: File, skip: Int): Map<String, List<String>> {
         val resultList = mutableListOf<String>()
+        println("file :: ${file.path}")
 
         if (file.isFile && file.exists()) {
             when (file.toPath().extension) {
