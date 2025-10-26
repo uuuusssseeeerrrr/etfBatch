@@ -15,6 +15,7 @@ import kotlinx.datetime.DateTimeUnit
 import kotlinx.datetime.TimeZone
 import kotlinx.datetime.minus
 import kotlinx.datetime.toLocalDateTime
+import org.apache.poi.ss.usermodel.CellType
 import org.apache.poi.ss.usermodel.WorkbookFactory
 import org.jetbrains.exposed.v1.core.less
 import org.jetbrains.exposed.v1.jdbc.batchUpsert
@@ -35,6 +36,11 @@ import kotlin.time.Clock
 import kotlin.time.ExperimentalTime
 
 class EtfStockListInfoService : KoinComponent {
+    companion object {
+        val homeDirectory: String = System.getenv("HOME") ?: "/home/rocky"
+    }
+
+
     @OptIn(ExperimentalTime::class)
     suspend fun etfStockListInfo() {
         val today = LocalDate.now()
@@ -162,11 +168,9 @@ class EtfStockListInfoService : KoinComponent {
                 val response: HttpResponse = client.get(fileUrl)
 
                 if (response.status.isSuccess()) {
-                    // 응답 본문을 바이트 배열로 받습니다.
                     val bytes = response.body<ByteArray>()
+                    val file = File("${homeDirectory}/excel/${folderName}/${fileNm}")
 
-                    // 바이트를 파일에 씁니다. (IO 작업은 Dispatchers.IO에서 실행)
-                    val file = File("${System.getProperty("user.home")}/excel/${folderName}/${fileNm}")
                     FileOutputStream(file).use { outputStream ->
                         outputStream.write(bytes)
                     }
@@ -178,7 +182,7 @@ class EtfStockListInfoService : KoinComponent {
     }
 
     private suspend fun readDirectoryToStringList(folderName: String, skip: Int): Map<String, List<String>> {
-        val directory = File("${System.getProperty("user.home")}/excel/${folderName}")
+        val directory = File("${homeDirectory}/excel/${folderName}")
 
         if (!directory.exists() || !directory.isDirectory) {
             println("유효한 디렉터리 경로가 아닙니다: $directory")
@@ -236,9 +240,9 @@ class EtfStockListInfoService : KoinComponent {
 
                             for (cell in row) {
                                 val cellValue = when (cell.cellType) {
-                                    org.apache.poi.ss.usermodel.CellType.STRING -> cell.stringCellValue
-                                    org.apache.poi.ss.usermodel.CellType.NUMERIC -> cell.numericCellValue.toString()
-                                    org.apache.poi.ss.usermodel.CellType.BOOLEAN -> cell.booleanCellValue.toString()
+                                    CellType.STRING -> cell.stringCellValue
+                                    CellType.NUMERIC -> cell.numericCellValue.toString()
+                                    CellType.BOOLEAN -> cell.booleanCellValue.toString()
                                     else -> {
                                         blankCellCnt++
                                         ""
@@ -264,7 +268,7 @@ class EtfStockListInfoService : KoinComponent {
     }
 
     private fun removeDirectory(folderName: String) {
-        val directory = File("${System.getProperty("user.home")}/excel/${folderName}")
+        val directory = File("${homeDirectory}/excel/${folderName}")
 
         if (directory.exists() && directory.isDirectory) {
             directory.listFiles()
