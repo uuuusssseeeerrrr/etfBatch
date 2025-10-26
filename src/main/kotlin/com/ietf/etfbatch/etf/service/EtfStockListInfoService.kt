@@ -16,6 +16,7 @@ import kotlinx.datetime.DateTimeUnit
 import kotlinx.datetime.TimeZone
 import kotlinx.datetime.minus
 import kotlinx.datetime.toLocalDateTime
+import org.apache.poi.hssf.usermodel.HSSFWorkbook
 import org.apache.poi.ss.usermodel.CellType
 import org.apache.poi.ss.usermodel.WorkbookFactory
 import org.jetbrains.exposed.v1.core.less
@@ -231,7 +232,44 @@ class EtfStockListInfoService : KoinComponent {
                         }
                 }
 
-                "xls", "xlsx" -> {
+                //factory가 정상적으로 xls 못읽어서 직접읽음
+                "xls" -> {
+                    file.inputStream().use { stream ->
+                        HSSFWorkbook(stream).use { workbook ->
+                            var rows = workbook.getSheetAt(0)
+
+                            if (rows.lastRowNum < 10 && workbook.numberOfSheets > 1) {
+                                rows = workbook.getSheetAt(1)
+                            }
+
+                            for (row in rows.drop(skip)) {
+                                var blankCellCnt = 0
+                                var s = ""
+
+                                for (cell in row) {
+                                    val cellValue = when (cell.cellType) {
+                                        CellType.STRING -> cell.stringCellValue
+                                        CellType.NUMERIC -> cell.numericCellValue.toString()
+                                        CellType.BOOLEAN -> cell.booleanCellValue.toString()
+                                        else -> {
+                                            blankCellCnt++
+                                            ""
+                                        }
+                                    }
+                                    s += "${cellValue},"
+                                }
+
+                                if (blankCellCnt == row.physicalNumberOfCells) {
+                                    break
+                                }
+
+                                resultList.add(s)
+                            }
+                        }
+                    }
+                }
+
+                "xlsx" -> {
                     val workbook = WorkbookFactory.create(file)
                     workbook.use { workbook ->
                         var rows = workbook.getSheetAt(0)
