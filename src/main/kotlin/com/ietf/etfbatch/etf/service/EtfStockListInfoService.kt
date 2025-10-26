@@ -37,7 +37,7 @@ import kotlin.time.ExperimentalTime
 
 class EtfStockListInfoService : KoinComponent {
     companion object {
-        val homeDirectory: String = System.getenv("HOME") ?: "/home/rocky"
+        val excelDir: String = System.getenv("EXCEL_DIR") ?: "/home/rocky/excel"
     }
 
 
@@ -169,7 +169,7 @@ class EtfStockListInfoService : KoinComponent {
 
                 if (response.status.isSuccess()) {
                     val bytes = response.body<ByteArray>()
-                    val file = File("${homeDirectory}/excel/${folderName}/${fileNm}")
+                    val file = File("${excelDir}/${folderName}/${fileNm}")
 
                     FileOutputStream(file).use { outputStream ->
                         outputStream.write(bytes)
@@ -182,7 +182,7 @@ class EtfStockListInfoService : KoinComponent {
     }
 
     private suspend fun readDirectoryToStringList(folderName: String, skip: Int): Map<String, List<String>> {
-        val directory = File("${homeDirectory}/excel/${folderName}")
+        val directory = File("${excelDir}/${folderName}")
 
         if (!directory.exists() || !directory.isDirectory) {
             println("유효한 디렉터리 경로가 아닙니다: $directory")
@@ -268,7 +268,7 @@ class EtfStockListInfoService : KoinComponent {
     }
 
     private fun removeDirectory(folderName: String) {
-        val directory = File("${homeDirectory}/excel/${folderName}")
+        val directory = File("${excelDir}/${folderName}")
 
         if (directory.exists() && directory.isDirectory) {
             directory.listFiles()

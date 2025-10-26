@@ -9,6 +9,7 @@ services:
     environment:
       - DOCKER_ENV=true
       - OCI_CONFIG_FILE=/root/.oci/config
+      - EXCEL_DIR=/home/rocky/excel
     extra_hosts:
       - "host.docker.internal:host-gateway"
     volumes:
