@@ -1,8 +1,14 @@
 # 빌드 스테이지
 FROM amazoncorretto:21-alpine AS builder
 WORKDIR /app
-COPY . .
+
+COPY build.gradle.kts settings.gradle.kts gradlew ./
+COPY gradle ./gradle
+
 RUN chmod +x gradlew
+RUN ./gradlew dependencies --no-daemon
+
+COPY . .
 RUN ./gradlew shadowJar --no-daemon
 
 # 실행 스테이지
