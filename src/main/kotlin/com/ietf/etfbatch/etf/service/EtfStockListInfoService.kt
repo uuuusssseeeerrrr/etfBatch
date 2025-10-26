@@ -18,7 +18,8 @@ import kotlinx.datetime.minus
 import kotlinx.datetime.toLocalDateTime
 import org.apache.poi.hssf.usermodel.HSSFWorkbook
 import org.apache.poi.ss.usermodel.CellType
-import org.apache.poi.ss.usermodel.WorkbookFactory
+import org.apache.poi.ss.usermodel.Workbook
+import org.apache.poi.xssf.usermodel.XSSFWorkbook
 import org.jetbrains.exposed.v1.core.less
 import org.jetbrains.exposed.v1.jdbc.batchUpsert
 import org.jetbrains.exposed.v1.jdbc.deleteWhere
@@ -31,7 +32,9 @@ import org.mozilla.universalchardet.ReaderFactory
 import java.io.File
 import java.io.FileOutputStream
 import java.nio.charset.Charset
+import java.time.DayOfWeek
 import java.time.LocalDate
+import java.time.ZoneId
 import java.time.format.DateTimeFormatter
 import kotlin.io.path.extension
 import kotlin.time.Clock
@@ -45,7 +48,7 @@ class EtfStockListInfoService : KoinComponent {
 
     @OptIn(ExperimentalTime::class)
     suspend fun etfStockListInfo() {
-        val today = LocalDate.now()
+        val today = LocalDate.now(ZoneId.of("Asia/Seoul"))
         val processorAmova: ProcessingData by inject(named("amova"))
         val processorAsset: ProcessingData by inject(named("asset"))
         val processorGlobalx: ProcessingData by inject(named("globalx"))
@@ -106,8 +109,22 @@ class EtfStockListInfoService : KoinComponent {
                         }
 
                         row[EtfList.companyName]!!.startsWith("simplex", true) -> {
+                            val yyyyMMdd = when (today.dayOfWeek) {
+                                DayOfWeek.SATURDAY -> {
+                                    today.plusDays(2).format(DateTimeFormatter.ofPattern("yyyyMMdd"))
+                                }
+
+                                DayOfWeek.SUNDAY -> {
+                                    today.plusDays(1).format(DateTimeFormatter.ofPattern("yyyyMMdd"))
+                                }
+
+                                else -> {
+                                    today.format(DateTimeFormatter.ofPattern("yyyyMMdd"))
+                                }
+                            }
+
                             downloadExcelFile(
-                                "${EtfPublisher.SIMPLEX.downloadUrl}${today.format(DateTimeFormatter.ofPattern("yyyyMMdd"))}.xlsx",
+                                "${EtfPublisher.SIMPLEX.downloadUrl}${yyyyMMdd}.xlsx",
                                 EtfPublisher.SIMPLEX.folderName,
                                 "${row[EtfList.stockCode]}_data.xlsx"
                             )
@@ -236,70 +253,15 @@ class EtfStockListInfoService : KoinComponent {
                 "xls" -> {
                     file.inputStream().use { stream ->
                         HSSFWorkbook(stream).use { workbook ->
-                            var rows = workbook.getSheetAt(0)
-
-                            if (rows.lastRowNum < 10 && workbook.numberOfSheets > 1) {
-                                rows = workbook.getSheetAt(1)
-                            }
-
-                            for (row in rows.drop(skip)) {
-                                var blankCellCnt = 0
-                                var s = ""
-
-                                for (cell in row) {
-                                    val cellValue = when (cell.cellType) {
-                                        CellType.STRING -> cell.stringCellValue
-                                        CellType.NUMERIC -> cell.numericCellValue.toString()
-                                        CellType.BOOLEAN -> cell.booleanCellValue.toString()
-                                        else -> {
-                                            blankCellCnt++
-                                            ""
-                                        }
-                                    }
-                                    s += "${cellValue},"
-                                }
-
-                                if (blankCellCnt == row.physicalNumberOfCells) {
-                                    break
-                                }
-
-                                resultList.add(s)
-                            }
+                            resultList.addAll(readExcelData(workbook, skip))
                         }
                     }
                 }
 
                 "xlsx" -> {
-                    val workbook = WorkbookFactory.create(file)
-                    workbook.use { workbook ->
-                        var rows = workbook.getSheetAt(0)
-
-                        if (rows.lastRowNum < 10 && workbook.numberOfSheets > 1) {
-                            rows = workbook.getSheetAt(1)
-                        }
-
-                        for (row in rows.drop(skip)) {
-                            var blankCellCnt = 0
-                            var s = ""
-
-                            for (cell in row) {
-                                val cellValue = when (cell.cellType) {
-                                    CellType.STRING -> cell.stringCellValue
-                                    CellType.NUMERIC -> cell.numericCellValue.toString()
-                                    CellType.BOOLEAN -> cell.booleanCellValue.toString()
-                                    else -> {
-                                        blankCellCnt++
-                                        ""
-                                    }
-                                }
-                                s += "${cellValue},"
-                            }
-
-                            if (blankCellCnt == row.physicalNumberOfCells) {
-                                break
-                            }
-
-                            resultList.add(s)
+                    file.inputStream().use { stream ->
+                        XSSFWorkbook(stream).use { workbook ->
+                            resultList.addAll(readExcelData(workbook, skip))
                         }
                     }
                 }
@@ -319,5 +281,40 @@ class EtfStockListInfoService : KoinComponent {
                 ?.filter { it.isFile }
                 ?.forEach { it.delete() }
         }
+    }
+
+    private fun readExcelData(workbook: Workbook, skip: Int): List<String> {
+        val resultList = mutableListOf<String>()
+        var rows = workbook.getSheetAt(0)
+
+        if (rows.lastRowNum < 10 && workbook.numberOfSheets > 1) {
+            rows = workbook.getSheetAt(1)
+        }
+
+        for (row in rows.drop(skip)) {
+            var blankCellCnt = 0
+            var s = ""
+
+            for (cell in row) {
+                val cellValue = when (cell.cellType) {
+                    CellType.STRING -> cell.stringCellValue
+                    CellType.NUMERIC -> cell.numericCellValue.toString()
+                    CellType.BOOLEAN -> cell.booleanCellValue.toString()
+                    else -> {
+                        blankCellCnt++
+                        ""
+                    }
+                }
+                s += "${cellValue},"
+            }
+
+            if (blankCellCnt == row.physicalNumberOfCells) {
+                break
+            }
+
+            resultList.add(s)
+        }
+
+        return resultList.toList()
     }
 }
