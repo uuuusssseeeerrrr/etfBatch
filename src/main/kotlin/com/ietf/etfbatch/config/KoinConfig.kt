@@ -1,11 +1,12 @@
 package com.ietf.etfbatch.config
 
-import com.ietf.etfbatch.etf.service.EtfStockListInfoService
-import com.ietf.etfbatch.etf.service.ProcessingData
+import com.ietf.etfbatch.etf.service.EtfStocksSyncService
+import com.ietf.etfbatch.etf.service.ProcessData
+import com.ietf.etfbatch.etf.service.StockListSyncService
 import com.ietf.etfbatch.etf.service.impl.*
 import com.ietf.etfbatch.rate.service.RateService
-import com.ietf.etfbatch.stock.service.KisInfoService
-import com.ietf.etfbatch.stock.service.KisStockService
+import com.ietf.etfbatch.stock.service.KisStockInfoService
+import com.ietf.etfbatch.stock.service.KisStockPriceService
 import com.ietf.etfbatch.stock.service.StockRemoveService
 import com.ietf.etfbatch.token.service.KisTokenService
 import io.ktor.server.application.*
@@ -18,17 +19,19 @@ import org.koin.logger.slf4jLogger
 fun Application.koinConfig() {
     val clientModule = module {
         singleOf(::KisTokenService)
-        singleOf(::KisInfoService)
-        singleOf(::KisStockService)
+        singleOf(::KisStockInfoService)
+        singleOf(::KisStockPriceService)
         singleOf(::StockRemoveService)
         singleOf(::RateService)
-        singleOf(::EtfStockListInfoService)
-        single<ProcessingData>(named("amova")) { ProcessingDataAmova() }
-        single<ProcessingData>(named("asset")) { ProcessingDataAsset() }
-        single<ProcessingData>(named("globalx")) { ProcessingDataGlobalX() }
-        single<ProcessingData>(named("mitsubishi")) { ProcessingDataMitsubishi() }
-        single<ProcessingData>(named("nomura")) { ProcessingDataNomura() }
-        single<ProcessingData>(named("simplex")) { ProcessingDataSimplex() }
+        singleOf(::EtfStocksSyncService)
+        singleOf(::StockListSyncService)
+
+        single<ProcessData>(named("amova")) { ProcessAmovaData() }
+        single<ProcessData>(named("asset")) { ProcessAssetData() }
+        single<ProcessData>(named("globalx")) { ProcessGlobalXData() }
+        single<ProcessData>(named("mitsubishi")) { ProcessMitsubishiData() }
+        single<ProcessData>(named("nomura")) { ProcessNomuraData() }
+        single<ProcessData>(named("simplex")) { ProcessSimplexData() }
     }
 
     install(Koin) {

@@ -1,4 +1,4 @@
-package com.ietf.etfbatch.etf.service
+package com.ietf.etfbatch.etf.util
 
 fun removeCharEtfName(etfName: String): String {
     val regexString = ",\\s*(LT|IN|LIM)"

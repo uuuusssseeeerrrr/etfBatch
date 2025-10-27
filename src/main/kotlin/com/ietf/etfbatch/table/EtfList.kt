@@ -13,6 +13,7 @@ object EtfList : Table("etf_list") {
     val tradingLot = varchar("trading_lot", length = 10).nullable()
     val trustFeeRate = varchar("trust_fee_rate", length = 10).nullable()
     val stdPdno = varchar("std_pdno", length = 12).nullable()
+    val isinCode = varchar("isin_code", length = 12).nullable()
     val regDate = datetime("reg_date")
     val modDate = datetime("mod_date")
     override val primaryKey = PrimaryKey(market, stockCode)

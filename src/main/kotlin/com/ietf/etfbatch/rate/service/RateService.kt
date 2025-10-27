@@ -42,7 +42,7 @@ class RateService {
 
         transaction {
             Rate.insert {
-                it[Rate.regDate] = Clock.System.now().toLocalDateTime(TimeZone.currentSystemDefault())
+                it[Rate.regDate] = Clock.System.now().toLocalDateTime(TimeZone.of("Asia/Seoul"))
                 it[Rate.usdRate] = usdRate.rate.toBigDecimal()
                 it[Rate.jpyRate] = jpyRate.rate.toBigDecimal().multiply(100.toBigDecimal())
                 it[Rate.sgdRate] = sgdRate.rate.toBigDecimal()
@@ -53,7 +53,7 @@ class RateService {
 
     private suspend fun callApi(from: String, to: String): WiseRateResponse {
         return httpClient.get(
-            """https://api.transferwise.com/v1/rates?source=${from}&target=${to}"""
+            "https://api.transferwise.com/v1/rates?source=${from}&target=${to}"
         ).body<List<WiseRateResponse>>().first()
     }
 }

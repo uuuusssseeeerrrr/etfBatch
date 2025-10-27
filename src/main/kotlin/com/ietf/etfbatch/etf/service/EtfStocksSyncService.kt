@@ -40,21 +40,20 @@ import kotlin.io.path.extension
 import kotlin.time.Clock
 import kotlin.time.ExperimentalTime
 
-class EtfStockListInfoService : KoinComponent {
+class EtfStocksSyncService : KoinComponent {
     companion object {
         val excelDir: String = System.getenv("EXCEL_DIR") ?: "/home/rocky/excel"
     }
 
-
     @OptIn(ExperimentalTime::class)
     suspend fun etfStockListInfo() {
         val today = LocalDate.now(ZoneId.of("Asia/Seoul"))
-        val processorAmova: ProcessingData by inject(named("amova"))
-        val processorAsset: ProcessingData by inject(named("asset"))
-        val processorGlobalx: ProcessingData by inject(named("globalx"))
-        val processorMitsubishi: ProcessingData by inject(named("mitsubishi"))
-        val processorNomura: ProcessingData by inject(named("nomura"))
-        val processorSimplex: ProcessingData by inject(named("simplex"))
+        val processorAmova: ProcessData by inject(named("amova"))
+        val processorAsset: ProcessData by inject(named("asset"))
+        val processorGlobalx: ProcessData by inject(named("globalx"))
+        val processorMitsubishi: ProcessData by inject(named("mitsubishi"))
+        val processorNomura: ProcessData by inject(named("nomura"))
+        val processorSimplex: ProcessData by inject(named("simplex"))
         val etfList = withContext(Dispatchers.IO) {
             transaction {
                 EtfList.selectAll().toList()
@@ -145,14 +144,17 @@ class EtfStockListInfoService : KoinComponent {
             val amovaData = readDirectoryToStringList(EtfPublisher.AMOVA.folderName, EtfPublisher.AMOVA.skip)
             val simplexData = readDirectoryToStringList(EtfPublisher.SIMPLEX.folderName, EtfPublisher.SIMPLEX.skip)
 
-            dataList.addAll(processorNomura.process(nomuraData))
-            dataList.addAll(processorGlobalx.process(globalData))
-            dataList.addAll(processorAsset.process(assetData))
-            dataList.addAll(processorMitsubishi.process(mitsuData))
-            dataList.addAll(processorAmova.process(amovaData))
-            dataList.addAll(processorSimplex.process(simplexData))
+            // 데이터 가공
+            dataList.addAll(processorNomura.processData(nomuraData))
+            dataList.addAll(processorGlobalx.processData(globalData))
+            dataList.addAll(processorAsset.processData(assetData))
+            dataList.addAll(processorMitsubishi.processData(mitsuData))
+            dataList.addAll(processorAmova.processData(amovaData))
+            dataList.addAll(processorSimplex.processData(simplexData))
 
-            // 데이터베이스 작업
+            // 데이터베이스 입력
+            val kstTimezone = TimeZone.of("Asia/Seoul")
+
             withContext(Dispatchers.IO) {
                 transaction {
                     EtfStockList.batchUpsert(dataList) { data ->
@@ -160,13 +162,13 @@ class EtfStockListInfoService : KoinComponent {
                         this[EtfStockList.etfStockCode] = data.etfStockCode
                         this[EtfStockList.stockCode] = data.stockCode
                         this[EtfStockList.etfPercent] = data.etfPercent
-                        this[EtfStockList.regDate] = Clock.System.now().toLocalDateTime(TimeZone.currentSystemDefault())
+                        this[EtfStockList.regDate] = Clock.System.now().toLocalDateTime(kstTimezone)
                     }
 
                     EtfStockList.deleteWhere {
                         EtfStockList.regDate less Clock.System.now()
-                            .minus(15, DateTimeUnit.DAY, TimeZone.currentSystemDefault())
-                            .toLocalDateTime(TimeZone.currentSystemDefault())
+                            .minus(15, DateTimeUnit.DAY, kstTimezone)
+                            .toLocalDateTime(kstTimezone)
                     }
                 }
             }

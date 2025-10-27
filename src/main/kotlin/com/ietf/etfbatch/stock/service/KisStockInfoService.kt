@@ -1,7 +1,6 @@
 package com.ietf.etfbatch.stock.service
 
 import com.ietf.etfbatch.stock.dto.KisInfoOutput
-import com.ietf.etfbatch.stock.dto.KisInfoRequest
 import com.ietf.etfbatch.stock.dto.KisInfoResponse
 import com.ietf.etfbatch.stock.dto.StockObject
 import com.ietf.etfbatch.table.EtfList
@@ -10,6 +9,9 @@ import com.ietf.etfbatch.token.service.KisTokenService
 import io.ktor.client.*
 import io.ktor.client.call.*
 import io.ktor.client.request.*
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.async
+import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.delay
 import kotlinx.datetime.TimeZone
 import kotlinx.datetime.toLocalDateTime
@@ -22,14 +24,14 @@ import kotlin.time.Clock
 import kotlin.time.ExperimentalTime
 
 @OptIn(ExperimentalTime::class)
-class KisInfoService(
+class KisStockInfoService(
     val httpClient: HttpClient,
     private val kisTokenService: KisTokenService
 ) {
     companion object {
         const val SEARCH_INFO_TR_ID = "CTPF1702R"
         const val MIN_INTERVAL = 112L
-        private val logger = LoggerFactory.getLogger(KisInfoService::class.java)
+        private val logger = LoggerFactory.getLogger(KisStockInfoService::class.java)
     }
 
     suspend fun kisInfo() {
@@ -41,7 +43,7 @@ class KisInfoService(
      * ETF 정보 가져오기
      */
     private suspend fun getEtfInfo() {
-        val reqEtfInfoList = transaction {
+        val newEtfList = transaction {
             EtfList.select(EtfList.market, EtfList.stockCode)
                 .where { (EtfList.stdPdno.isNull()) or (EtfList.stdPdno.trim().eq("")) }
                 .map { row ->
@@ -49,33 +51,30 @@ class KisInfoService(
                 }.toList()
         }
 
-        if (reqEtfInfoList.isNotEmpty()) {
-            val etfApiResultList = getInfo(reqEtfInfoList)
+        if (newEtfList.isNotEmpty()) {
+            val etfApiResultList = getInfo(newEtfList)
 
-            etfApiResultList.filter { infoOutput ->
-                !infoOutput.market.isNullOrEmpty()
-                        && !infoOutput.stockCode.isNullOrEmpty()
-            }
-                .forEach { apiResult ->
-                    transaction {
-                        EtfList.update({
-                            EtfList.market.eq(
-                                apiResult.market!!
-                            ) and EtfList.stockCode.eq(apiResult.stockCode!!)
-                        }) {
-                            it[EtfList.tradingLot] = apiResult.buyUnitQty
-                            it[EtfList.stdPdno] = apiResult.stdPdno
-                            it[EtfList.modDate] =
-                                Clock.System.now().toLocalDateTime(TimeZone.currentSystemDefault())
-                        }
+            etfApiResultList.forEach { apiResult ->
+                transaction {
+                    EtfList.update({
+                        EtfList.market.eq(
+                            apiResult.market
+                        ) and EtfList.stockCode.eq(apiResult.stockCode)
+                    }) {
+                        it[EtfList.tradingLot] = apiResult.buyUnitQty
+                        it[EtfList.stdPdno] = apiResult.stdPdno
+                        it[EtfList.isinCode] = apiResult.isinCd
+                        it[EtfList.modDate] =
+                            Clock.System.now().toLocalDateTime(TimeZone.of("Asia/Seoul"))
                     }
                 }
+            }
         }
     }
 
     @OptIn(ExperimentalTime::class)
     private suspend fun getStockInfo() {
-        val reqStockInfoList = transaction {
+        val newStockList = transaction {
             StockList.select(StockList.market, StockList.stockCode)
                 .where { (StockList.stdPdno.isNull()) or (StockList.stdPdno.trim().eq("")) }
                 .map { row ->
@@ -83,32 +82,39 @@ class KisInfoService(
                 }.toList()
         }
 
-        if (reqStockInfoList.isNotEmpty()) {
-            val apiResultList = getInfo(reqStockInfoList)
+        if (newStockList.isNotEmpty()) {
+            val today = Clock.System.now().toLocalDateTime(TimeZone.of("Asia/Seoul"))
+            val apiResultList = getInfo(newStockList)
 
-            apiResultList.filter { infoOutput ->
-                !infoOutput.market.isNullOrEmpty()
-                        && !infoOutput.stockCode.isNullOrEmpty()
-            }
-                .forEach { apiResult ->
-                    transaction {
-                        StockList.update({
-                            StockList.market.eq(apiResult.market!!) and
-                                    StockList.stockCode.eq(apiResult.stockCode!!)
-                        }) {
-                            it[StockList.trCrcyCd] = apiResult.trCrcyCd
-                            it[StockList.buyUnitQty] = apiResult.buyUnitQty
-                            it[StockList.stdPdno] = apiResult.stdPdno
-                            it[StockList.prdtName] = if (apiResult.prdtName.contains("]")) {
-                                apiResult.prdtName.split(']')[1]
-                            } else {
-                                apiResult.prdtName
+            coroutineScope {
+                apiResultList.forEach { apiResult ->
+                    async(Dispatchers.IO) {
+                        transaction {
+                            StockList.update({
+                                StockList.market.eq(apiResult.market) and
+                                        StockList.stockCode.eq(apiResult.stockCode)
+                            }) {
+                                it[StockList.trCrcyCd] = apiResult.trCrcyCd
+                                it[StockList.buyUnitQty] = apiResult.buyUnitQty
+                                it[StockList.stdPdno] = apiResult.stdPdno
+                                it[StockList.prdtName] = if (apiResult.prdtName.contains("]")) {
+                                    apiResult.prdtName.split(']')[1]
+                                } else {
+                                    apiResult.prdtName
+                                }
+
+                                it[StockList.isinCode] = apiResult.isinCd
+                                it[StockList.stockName] = if (apiResult.prdtEngName.contains("]")) {
+                                    apiResult.prdtEngName.split(']')[1]
+                                } else {
+                                    apiResult.prdtEngName
+                                }
+                                it[StockList.modDate] = today
                             }
-
-                            it[StockList.modDate] = Clock.System.now().toLocalDateTime(TimeZone.currentSystemDefault())
                         }
                     }
                 }
+            }
         }
     }
 
@@ -121,16 +127,15 @@ class KisInfoService(
             val startTime = System.currentTimeMillis()
             marketCode = if (stock.market == "TSE") "515" else "512"
 
-            val kisApiResult = httpClient.post("/uapi/overseas-price/v1/quotations/search-info") {
+            val kisApiResult = httpClient.get("/uapi/overseas-price/v1/quotations/search-info") {
                 header("authorization", "Bearer $token")
                 header("tr_id", SEARCH_INFO_TR_ID)
                 header("custtype", "P")
 
-                setBody(
-                    KisInfoRequest(
-                        marketCode, stock.stockCode
-                    )
-                )
+                url {
+                    parameters.append("PRDT_TYPE_CD", marketCode)
+                    parameters.append("PDNO", stock.stockCode)
+                }
             }.body<KisInfoResponse>()
 
             if (kisApiResult.rtCd == "0" &&

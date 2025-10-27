@@ -16,8 +16,8 @@ class StockRemoveService() {
      * 일주일 이상 지난 히스토리 삭제
      */
     fun removeOldHistory() {
-        val targetDate = Clock.System.now().minus(7, DateTimeUnit.DAY, TimeZone.currentSystemDefault())
-            .toLocalDateTime(TimeZone.currentSystemDefault())
+        val targetDate = Clock.System.now().minus(7, DateTimeUnit.DAY, TimeZone.of("Asia/Seoul"))
+            .toLocalDateTime(TimeZone.of("Asia/Seoul"))
 
         val targetDateFormat = """
             ${targetDate.year}

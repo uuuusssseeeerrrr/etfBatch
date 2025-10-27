@@ -1,9 +1,10 @@
 package com.ietf.etfbatch
 
-import com.ietf.etfbatch.etf.service.EtfStockListInfoService
+import com.ietf.etfbatch.etf.service.EtfStocksSyncService
+import com.ietf.etfbatch.etf.service.StockListSyncService
 import com.ietf.etfbatch.rate.service.RateService
-import com.ietf.etfbatch.stock.service.KisInfoService
-import com.ietf.etfbatch.stock.service.KisStockService
+import com.ietf.etfbatch.stock.service.KisStockInfoService
+import com.ietf.etfbatch.stock.service.KisStockPriceService
 import com.ietf.etfbatch.stock.service.StockRemoveService
 import io.ktor.server.application.*
 import io.ktor.server.auth.*
@@ -13,17 +14,21 @@ import org.koin.ktor.ext.inject
 
 fun Application.configureRouting() {
     val logger = environment.log
-    val kisInfoService by inject<KisInfoService>()
-    val kisStockService by inject<KisStockService>()
+    val kisStockInfoService by inject<KisStockInfoService>()
+    val kisStockPriceService by inject<KisStockPriceService>()
     val stockRemoveService by inject<StockRemoveService>()
     val rateService by inject<RateService>()
-    val etfStockListInfoService by inject<EtfStockListInfoService>()
+    val etfStocksSyncService by inject<EtfStocksSyncService>()
+    val stockListSyncService by inject<StockListSyncService>()
 
+    /**
+     * 나중에 코드가 길어지면 분리하기
+     */
     routing {
         authenticate("tokenAuth") {
-            get("/etf") {
+            post("/prices/etf") {
                 try {
-                    kisStockService.getEtfPrice()
+                    kisStockPriceService.getEtfPrice()
                 } catch (e: Exception) {
                     logger.error(e.message, e)
                     call.respondText(
@@ -34,9 +39,9 @@ fun Application.configureRouting() {
                 call.respondText("etf 요청 처리됨")
             }
 
-            get("/stock") {
+            post("/prices/stock") {
                 try {
-                    kisStockService.getStockPrice()
+                    kisStockPriceService.getStockPrice()
                 } catch (e: Exception) {
                     logger.error(e.message, e)
                     call.respondText(
@@ -47,9 +52,9 @@ fun Application.configureRouting() {
                 call.respondText("stock 요청 처리됨")
             }
 
-            get("/kisInfo") {
+            post("/stock-infos") {
                 try {
-                    kisInfoService.kisInfo()
+                    kisStockInfoService.kisInfo()
                 } catch (e: Exception) {
                     logger.error(e.message, e)
                     call.respondText(
@@ -60,20 +65,20 @@ fun Application.configureRouting() {
                 call.respondText("kisInfo 요청 처리됨")
             }
 
-            get("/removeOldHistory") {
+            post("/histories/cleanup") {
                 try {
                     stockRemoveService.removeOldHistory()
                 } catch (e: Exception) {
                     logger.error(e.message, e)
                     call.respondText(
-                        "오래된데이터 삭제완료중 오류발생"
+                        "오래된데이터 삭제배치중 오류발생"
                     )
                 }
 
-                call.respondText("오래된데이터 삭제완료")
+                call.respondText("오래된데이터 삭제배치 완료")
             }
 
-            get("/rate") {
+            post("/rate") {
                 try {
                     rateService.getRate()
                 } catch (e: Exception) {
@@ -86,9 +91,9 @@ fun Application.configureRouting() {
                 call.respondText("환율조회완료")
             }
 
-            get("/etfStock") {
+            post("/etf-stocks/sync") {
                 try {
-                    etfStockListInfoService.etfStockListInfo()
+                    etfStocksSyncService.etfStockListInfo()
                 } catch (e: Exception) {
                     logger.error(e.message, e)
                     call.respondText(
@@ -97,6 +102,19 @@ fun Application.configureRouting() {
                 }
 
                 call.respondText("ETF 비중정보 입력완료")
+            }
+
+            post("/stock-list/sync") {
+                try {
+                    stockListSyncService.syncStockList()
+                } catch (e: Exception) {
+                    logger.error(e.message, e)
+                    call.respondText(
+                        "주식목록 동기화중 오류발생"
+                    )
+                }
+
+                call.respondText("주식목록 동기화 완료")
             }
         }
     }

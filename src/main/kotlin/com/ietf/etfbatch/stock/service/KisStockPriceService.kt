@@ -22,14 +22,14 @@ import kotlin.time.Clock
 import kotlin.time.ExperimentalTime
 
 @OptIn(ExperimentalTime::class)
-class KisStockService(
+class KisStockPriceService(
     val httpClient: HttpClient,
     private val kisTokenService: KisTokenService
 ) {
     companion object {
         const val PRICE_DETAIL_TR_ID = "HHDFS76200200"
         const val MIN_INTERVAL = 112L
-        private val logger = LoggerFactory.getLogger(KisStockService::class.java)
+        private val logger = LoggerFactory.getLogger(KisStockPriceService::class.java)
     }
 
     /**
@@ -61,7 +61,7 @@ class KisStockService(
                     this[EtfPriceHistory.tXrat] = result.tXrat
                     this[EtfPriceHistory.tRate] = result.tRate
                     this[EtfPriceHistory.regDate] =
-                        Clock.System.now().toLocalDateTime(TimeZone.currentSystemDefault())
+                        Clock.System.now().toLocalDateTime(TimeZone.of("Asia/Seoul"))
                 }
             }
         }
@@ -102,7 +102,7 @@ class KisStockService(
                     this[StockPriceHistory.bpsx] = result.bpsx
                     this[StockPriceHistory.eIcod] = result.eIcod
                     this[StockPriceHistory.regDate] =
-                        Clock.System.now().toLocalDateTime(TimeZone.currentSystemDefault())
+                        Clock.System.now().toLocalDateTime(TimeZone.of("Asia/Seoul"))
                 }
             }
         }

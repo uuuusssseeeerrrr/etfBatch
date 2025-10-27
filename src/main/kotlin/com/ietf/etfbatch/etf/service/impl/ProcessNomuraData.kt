@@ -1,15 +1,15 @@
 package com.ietf.etfbatch.etf.service.impl
 
-import com.ietf.etfbatch.etf.service.ProcessingData
-import com.ietf.etfbatch.etf.service.removeCharEtfName
+import com.ietf.etfbatch.etf.service.ProcessData
+import com.ietf.etfbatch.etf.util.removeCharEtfName
 import com.ietf.etfbatch.table.EtfStockListRecord
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.async
 import kotlinx.coroutines.awaitAll
 import kotlinx.coroutines.coroutineScope
 
-class ProcessingDataNomura : ProcessingData {
-    override suspend fun process(data: Map<String, List<String>>): List<EtfStockListRecord> {
+class ProcessNomuraData : ProcessData {
+    override suspend fun processData(data: Map<String, List<String>>): List<EtfStockListRecord> {
         return coroutineScope {
             val deferedResult = data.map { (key, value) ->
                 async(Dispatchers.Default) {
