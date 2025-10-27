@@ -37,16 +37,18 @@ val restClient = module {
 
             engine {
                 endpoint {
-                    maxConnectionsPerRoute = 4
-                    keepAliveTime = 10000
-                    connectTimeout = 10000
+                    maxConnectionsPerRoute = 10
+                    keepAliveTime = 100000
+                    connectTimeout = 100000
                     connectAttempts = 5
                 }
             }
 
-            install(Logging) {
-                logger = Logger.DEFAULT
-                level = LogLevel.ALL
+            if (!System.getenv("DOCKER_ENV").equals("true", ignoreCase = true)) {
+                install(Logging) {
+                    logger = Logger.DEFAULT
+                    level = LogLevel.ALL
+                }
             }
         }
     }

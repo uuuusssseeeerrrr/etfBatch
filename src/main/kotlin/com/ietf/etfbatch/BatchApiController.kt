@@ -6,10 +6,12 @@ import com.ietf.etfbatch.rate.service.RateService
 import com.ietf.etfbatch.stock.service.KisStockInfoService
 import com.ietf.etfbatch.stock.service.KisStockPriceService
 import com.ietf.etfbatch.stock.service.StockRemoveService
+import io.ktor.http.*
 import io.ktor.server.application.*
 import io.ktor.server.auth.*
 import io.ktor.server.response.*
 import io.ktor.server.routing.*
+import io.ktor.util.logging.*
 import org.koin.ktor.ext.inject
 
 fun Application.configureRouting() {
@@ -30,10 +32,13 @@ fun Application.configureRouting() {
                 try {
                     kisStockPriceService.getEtfPrice()
                 } catch (e: Exception) {
-                    logger.error(e.message, e)
+                    logger.error(e)
                     call.respondText(
-                        "etf 요청중 오류발생"
+                        text = "etf 요청중 오류발생",
+                        status = HttpStatusCode.InternalServerError
                     )
+
+                    return@post
                 }
 
                 call.respondText("etf 요청 처리됨")
@@ -43,10 +48,13 @@ fun Application.configureRouting() {
                 try {
                     kisStockPriceService.getStockPrice()
                 } catch (e: Exception) {
-                    logger.error(e.message, e)
+                    logger.error(e)
                     call.respondText(
-                        "stock 요청중 오류발생"
+                        text = "stock 요청중 오류발생",
+                        status = HttpStatusCode.InternalServerError
                     )
+
+                    return@post
                 }
 
                 call.respondText("stock 요청 처리됨")
@@ -56,10 +64,13 @@ fun Application.configureRouting() {
                 try {
                     kisStockInfoService.kisInfo()
                 } catch (e: Exception) {
-                    logger.error(e.message, e)
+                    logger.error(e)
                     call.respondText(
-                        "kisInfo 요청중 오류발생"
+                        text = "kisInfo 요청중 오류발생",
+                        status = HttpStatusCode.InternalServerError
                     )
+
+                    return@post
                 }
 
                 call.respondText("kisInfo 요청 처리됨")
@@ -69,10 +80,13 @@ fun Application.configureRouting() {
                 try {
                     stockRemoveService.removeOldHistory()
                 } catch (e: Exception) {
-                    logger.error(e.message, e)
+                    logger.error(e)
                     call.respondText(
-                        "오래된데이터 삭제배치중 오류발생"
+                        text = "오래된데이터 삭제배치중 오류발생",
+                        status = HttpStatusCode.InternalServerError
                     )
+
+                    return@post
                 }
 
                 call.respondText("오래된데이터 삭제배치 완료")
@@ -82,10 +96,13 @@ fun Application.configureRouting() {
                 try {
                     rateService.getRate()
                 } catch (e: Exception) {
-                    logger.error(e.message, e)
+                    logger.error(e)
                     call.respondText(
-                        "환율조회중 오류발생"
+                        text = "환율조회중 오류발생",
+                        status = HttpStatusCode.InternalServerError
                     )
+
+                    return@post
                 }
 
                 call.respondText("환율조회완료")
@@ -95,10 +112,13 @@ fun Application.configureRouting() {
                 try {
                     etfStocksSyncService.etfStockListInfo()
                 } catch (e: Exception) {
-                    logger.error(e.message, e)
+                    logger.error(e)
                     call.respondText(
-                        "ETF 비중정보 입력중 오류발생"
+                        text = "ETF 비중정보 입력중 오류발생",
+                        status = HttpStatusCode.InternalServerError
                     )
+
+                    return@post
                 }
 
                 call.respondText("ETF 비중정보 입력완료")
@@ -108,10 +128,13 @@ fun Application.configureRouting() {
                 try {
                     stockListSyncService.syncStockList()
                 } catch (e: Exception) {
-                    logger.error(e.message, e)
+                    logger.error(e)
                     call.respondText(
-                        "주식목록 동기화중 오류발생"
+                        text = "주식목록 동기화중 오류발생",
+                        status = HttpStatusCode.InternalServerError
                     )
+
+                    return@post
                 }
 
                 call.respondText("주식목록 동기화 완료")

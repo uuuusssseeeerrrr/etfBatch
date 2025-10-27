@@ -10,7 +10,7 @@ fun Application.configureSecurity() {
         bearer("tokenAuth") {
             authenticate { tokenCredential ->
                 if (tokenCredential.token == token) {
-                    "ok"
+                    UserIdPrincipal("batch")
                 } else {
                     null
                 }
