@@ -1,5 +1,6 @@
 package com.ietf.etfbatch.etf.service
 
+import com.ietf.etfbatch.stock.service.StockRemoveService
 import com.ietf.etfbatch.table.EtfStockList
 import com.ietf.etfbatch.table.StockList
 import kotlinx.datetime.TimeZone
@@ -11,11 +12,15 @@ import org.jetbrains.exposed.v1.core.isNull
 import org.jetbrains.exposed.v1.jdbc.insert
 import org.jetbrains.exposed.v1.jdbc.select
 import org.jetbrains.exposed.v1.jdbc.transactions.transaction
+import org.koin.core.component.KoinComponent
+import org.koin.core.component.inject
 import kotlin.time.Clock
 import kotlin.time.ExperimentalTime
 
 
-class StockListSyncService {
+class StockListSyncService : KoinComponent {
+    val stockRemoveService by inject<StockRemoveService>()
+
     @OptIn(ExperimentalTime::class)
     fun syncStockList() {
         val today = Clock.System.now().toLocalDateTime(TimeZone.of("Asia/Seoul"))
@@ -42,6 +47,8 @@ class StockListSyncService {
                     it[StockList.regDate] = today
                 }
             }
+
+            stockRemoveService.removeUnusedStockInfo()
         }
     }
 }

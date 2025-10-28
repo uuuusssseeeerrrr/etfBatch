@@ -5,34 +5,15 @@ import com.ietf.etfbatch.rate.dto.WiseRateResponse
 import com.ietf.etfbatch.table.Rate
 import io.ktor.client.*
 import io.ktor.client.call.*
-import io.ktor.client.engine.cio.*
-import io.ktor.client.plugins.*
-import io.ktor.client.plugins.contentnegotiation.*
 import io.ktor.client.request.*
-import io.ktor.serialization.kotlinx.json.*
 import kotlinx.datetime.TimeZone
 import kotlinx.datetime.toLocalDateTime
-import kotlinx.serialization.json.Json
 import org.jetbrains.exposed.v1.jdbc.insert
 import org.jetbrains.exposed.v1.jdbc.transactions.transaction
 import kotlin.time.Clock
 import kotlin.time.ExperimentalTime
 
-class RateService {
-    private val httpClient = HttpClient(CIO) {
-        install(ContentNegotiation) {
-            json(Json {
-                encodeDefaults = true
-                prettyPrint = true
-                ignoreUnknownKeys = true
-            })
-        }
-
-        defaultRequest {
-            header("Authorization", "Bearer ${VaultConfig.getVaultSecret("wise_key")}")
-        }
-    }
-
+class RateService(val client: HttpClient) {
     @OptIn(ExperimentalTime::class)
     suspend fun getRate() {
         val usdRate = callApi("USD", "KRW")
@@ -52,8 +33,9 @@ class RateService {
     }
 
     private suspend fun callApi(from: String, to: String): WiseRateResponse {
-        return httpClient.get(
-            "https://api.transferwise.com/v1/rates?source=${from}&target=${to}"
-        ).body<List<WiseRateResponse>>().first()
+        return client.get {
+            url("https://api.transferwise.com/v1/rates?source=${from}&target=${to}")
+            header("Authorization", "Bearer ${VaultConfig.getVaultSecret("wise_key")}")
+        }.body<List<WiseRateResponse>>().first()
     }
 }

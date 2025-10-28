@@ -12,6 +12,7 @@ import io.ktor.client.*
 import io.ktor.client.call.*
 import io.ktor.client.request.*
 import io.ktor.client.statement.*
+import kotlinx.coroutines.delay
 import kotlinx.datetime.TimeZone
 import kotlinx.datetime.toLocalDateTime
 import org.jetbrains.exposed.v1.jdbc.batchInsert
@@ -139,7 +140,7 @@ class KisStockPriceService(
             val delayTimeMs = MIN_INTERVAL - elapsedTimeMs
             if (delayTimeMs > 0) {
                 // 목표 간격보다 빨리 끝났다면, 남은 시간만큼 대기
-                Thread.sleep(delayTimeMs)
+                delay(delayTimeMs)
                 logger.debug("stockApiCall -> ${delayTimeMs}ms 지연 후 다음 호출.")
             }
         }

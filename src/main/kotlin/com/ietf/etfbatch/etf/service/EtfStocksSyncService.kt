@@ -4,56 +4,38 @@ import com.ietf.etfbatch.etf.dto.EtfPublisher
 import com.ietf.etfbatch.table.EtfList
 import com.ietf.etfbatch.table.EtfStockList
 import com.ietf.etfbatch.table.EtfStockListRecord
-import io.ktor.client.*
-import io.ktor.client.call.*
-import io.ktor.client.engine.cio.*
-import io.ktor.client.plugins.*
-import io.ktor.client.request.*
-import io.ktor.client.statement.*
-import io.ktor.http.*
+import jakarta.inject.Named
 import kotlinx.coroutines.*
 import kotlinx.datetime.DateTimeUnit
 import kotlinx.datetime.TimeZone
 import kotlinx.datetime.minus
 import kotlinx.datetime.toLocalDateTime
-import org.apache.poi.hssf.usermodel.HSSFWorkbook
-import org.apache.poi.ss.usermodel.CellType
-import org.apache.poi.ss.usermodel.Workbook
-import org.apache.poi.xssf.usermodel.XSSFWorkbook
 import org.jetbrains.exposed.v1.core.less
 import org.jetbrains.exposed.v1.jdbc.batchUpsert
 import org.jetbrains.exposed.v1.jdbc.deleteWhere
 import org.jetbrains.exposed.v1.jdbc.selectAll
 import org.jetbrains.exposed.v1.jdbc.transactions.transaction
 import org.koin.core.component.KoinComponent
-import org.koin.core.component.inject
-import org.koin.core.qualifier.named
-import org.mozilla.universalchardet.ReaderFactory
-import java.io.File
-import java.io.FileOutputStream
-import java.nio.charset.Charset
 import java.time.DayOfWeek
 import java.time.LocalDate
 import java.time.ZoneId
 import java.time.format.DateTimeFormatter
-import kotlin.io.path.extension
 import kotlin.time.Clock
 import kotlin.time.ExperimentalTime
 
-class EtfStocksSyncService : KoinComponent {
-    companion object {
-        val excelDir: String = System.getenv("EXCEL_DIR") ?: "/home/rocky/excel"
-    }
-
+class EtfStocksSyncService(
+    val etfFileHandler: EtfFileHandler,
+    @param:Named("amova") private val processorAmova: ProcessData,
+    @param:Named("asset") private val processorAsset: ProcessData,
+    @param:Named("globalx") private val processorGlobalx: ProcessData,
+    @param:Named("mitsubishi") private val processorMitsubishi: ProcessData,
+    @param:Named("nomura") private val processorNomura: ProcessData,
+    @param:Named("simplex") private val processorSimplex: ProcessData,
+) : KoinComponent {
     @OptIn(ExperimentalTime::class)
     suspend fun etfStockListInfo() {
         val today = LocalDate.now(ZoneId.of("Asia/Seoul"))
-        val processorAmova: ProcessData by inject(named("amova"))
-        val processorAsset: ProcessData by inject(named("asset"))
-        val processorGlobalx: ProcessData by inject(named("globalx"))
-        val processorMitsubishi: ProcessData by inject(named("mitsubishi"))
-        val processorNomura: ProcessData by inject(named("nomura"))
-        val processorSimplex: ProcessData by inject(named("simplex"))
+
         val etfList = withContext(Dispatchers.IO) {
             transaction {
                 EtfList.selectAll().toList()
@@ -62,87 +44,100 @@ class EtfStocksSyncService : KoinComponent {
 
         coroutineScope {
             //파일 다운로드
-            val deferredDownloads: List<Deferred<Unit>> = etfList.map { row ->
-                async(Dispatchers.IO) {
-                    when {
-                        row[EtfList.companyName]!!.startsWith("nomura", true) -> {
-                            downloadExcelFile(
-                                EtfPublisher.NOMURA.downloadUrl.format(row[EtfList.stockCode]),
-                                EtfPublisher.NOMURA.folderName,
-                                "${row[EtfList.stockCode]}_data.xlsx"
-                            )
-                        }
+            val deferredDownloads: List<Deferred<Unit>> = etfList
+                .map { row ->
+                    val companyName = row[EtfList.companyName] ?: ""
+                    val stockCode = row[EtfList.stockCode]
 
-                        row[EtfList.companyName]!!.startsWith("global", true) -> {
-                            downloadExcelFile(
-                                EtfPublisher.GLOBALX.downloadUrl.format(row[EtfList.stockCode]),
-                                EtfPublisher.GLOBALX.folderName,
-                                "${row[EtfList.stockCode]}_data.csv"
-                            )
-                        }
-
-                        row[EtfList.companyName]!!.startsWith("asset", true) -> {
-                            downloadExcelFile(
-                                EtfPublisher.ASSET.downloadUrl,
-                                EtfPublisher.ASSET.folderName,
-                                "${row[EtfList.stockCode]}_data.csv"
-                            )
-                        }
-
-                        row[EtfList.companyName]!!.startsWith("mitsu", true) -> {
-                            downloadExcelFile(
-                                EtfPublisher.MITSUBISHI.downloadUrl.format(row[EtfList.stockCode]),
-                                EtfPublisher.MITSUBISHI.folderName,
-                                "${row[EtfList.stockCode]}_data.csv"
-                            )
-                        }
-
-                        row[EtfList.companyName]!!.startsWith("amova", true) -> {
-                            downloadExcelFile(
-                                EtfPublisher.AMOVA.downloadUrl.format(
-                                    row[EtfList.stockCode], today.format(DateTimeFormatter.ofPattern("yyyyMM"))
-                                ),
-                                EtfPublisher.AMOVA.folderName,
-                                "${row[EtfList.stockCode]}_data.xls"
-                            )
-                        }
-
-                        row[EtfList.companyName]!!.startsWith("simplex", true) -> {
-                            val yyyyMMdd = when (today.dayOfWeek) {
-                                DayOfWeek.SATURDAY -> {
-                                    today.plusDays(2).format(DateTimeFormatter.ofPattern("yyyyMMdd"))
-                                }
-
-                                DayOfWeek.SUNDAY -> {
-                                    today.plusDays(1).format(DateTimeFormatter.ofPattern("yyyyMMdd"))
-                                }
-
-                                else -> {
-                                    today.format(DateTimeFormatter.ofPattern("yyyyMMdd"))
-                                }
+                    async(Dispatchers.IO) {
+                        when {
+                            companyName.startsWith("nomura", true) -> {
+                                etfFileHandler.downloadFileToExcelDir(
+                                    EtfPublisher.NOMURA.downloadUrl.format(stockCode),
+                                    EtfPublisher.NOMURA.folderName,
+                                    "${stockCode}_data.xlsx"
+                                )
                             }
 
-                            downloadExcelFile(
-                                "${EtfPublisher.SIMPLEX.downloadUrl}${yyyyMMdd}.xlsx",
-                                EtfPublisher.SIMPLEX.folderName,
-                                "${row[EtfList.stockCode]}_data.xlsx"
-                            )
+                            companyName.startsWith("global", true) -> {
+                                etfFileHandler.downloadFileToExcelDir(
+                                    EtfPublisher.GLOBALX.downloadUrl.format(stockCode),
+                                    EtfPublisher.GLOBALX.folderName,
+                                    "${stockCode}_data.csv"
+                                )
+                            }
+
+                            companyName.startsWith("asset", true) -> {
+                                etfFileHandler.downloadFileToExcelDir(
+                                    EtfPublisher.ASSET.downloadUrl,
+                                    EtfPublisher.ASSET.folderName,
+                                    "${stockCode}_data.csv"
+                                )
+                            }
+
+                            companyName.startsWith("mitsu", true) -> {
+                                etfFileHandler.downloadFileToExcelDir(
+                                    EtfPublisher.MITSUBISHI.downloadUrl.format(stockCode),
+                                    EtfPublisher.MITSUBISHI.folderName,
+                                    "${stockCode}_data.csv"
+                                )
+                            }
+
+                            companyName.startsWith("amova", true) -> {
+                                etfFileHandler.downloadFileToExcelDir(
+                                    EtfPublisher.AMOVA.downloadUrl.format(
+                                        stockCode, today.format(DateTimeFormatter.ofPattern("yyyyMM"))
+                                    ),
+                                    EtfPublisher.AMOVA.folderName,
+                                    "${stockCode}_data.xls"
+                                )
+                            }
+
+                            companyName.startsWith("simplex", true) -> {
+                                val formatter = DateTimeFormatter.ofPattern("yyyyMMdd")
+                                val yyyyMMdd = when (today.dayOfWeek) {
+                                    DayOfWeek.SATURDAY -> {
+                                        today.plusDays(2).format(formatter)
+                                    }
+
+                                    DayOfWeek.SUNDAY -> {
+                                        today.plusDays(1).format(formatter)
+                                    }
+
+                                    else -> {
+                                        today.format(formatter)
+                                    }
+                                }
+
+                                etfFileHandler.downloadFileToExcelDir(
+                                    "${EtfPublisher.SIMPLEX.downloadUrl}${yyyyMMdd}.xlsx",
+                                    EtfPublisher.SIMPLEX.folderName,
+                                    "${stockCode}_data.xlsx"
+                                )
+                            }
                         }
                     }
                 }
-            }
 
             deferredDownloads.awaitAll()
 
             val dataList = mutableListOf<EtfStockListRecord>()
 
             // 엑셀파일 읽기
-            val nomuraData = readDirectoryToStringList(EtfPublisher.NOMURA.folderName, EtfPublisher.NOMURA.skip)
-            val globalData = readDirectoryToStringList(EtfPublisher.GLOBALX.folderName, EtfPublisher.GLOBALX.skip)
-            val assetData = readDirectoryToStringList(EtfPublisher.ASSET.folderName, EtfPublisher.ASSET.skip)
-            val mitsuData = readDirectoryToStringList(EtfPublisher.MITSUBISHI.folderName, EtfPublisher.MITSUBISHI.skip)
-            val amovaData = readDirectoryToStringList(EtfPublisher.AMOVA.folderName, EtfPublisher.AMOVA.skip)
-            val simplexData = readDirectoryToStringList(EtfPublisher.SIMPLEX.folderName, EtfPublisher.SIMPLEX.skip)
+            val nomuraData =
+                etfFileHandler.readDirectoryToStringList(EtfPublisher.NOMURA.folderName, EtfPublisher.NOMURA.skip)
+            val globalData =
+                etfFileHandler.readDirectoryToStringList(EtfPublisher.GLOBALX.folderName, EtfPublisher.GLOBALX.skip)
+            val assetData =
+                etfFileHandler.readDirectoryToStringList(EtfPublisher.ASSET.folderName, EtfPublisher.ASSET.skip)
+            val mitsuData = etfFileHandler.readDirectoryToStringList(
+                EtfPublisher.MITSUBISHI.folderName,
+                EtfPublisher.MITSUBISHI.skip
+            )
+            val amovaData =
+                etfFileHandler.readDirectoryToStringList(EtfPublisher.AMOVA.folderName, EtfPublisher.AMOVA.skip)
+            val simplexData =
+                etfFileHandler.readDirectoryToStringList(EtfPublisher.SIMPLEX.folderName, EtfPublisher.SIMPLEX.skip)
 
             // 데이터 가공
             dataList.addAll(processorNomura.processData(nomuraData))
@@ -162,11 +157,11 @@ class EtfStocksSyncService : KoinComponent {
                         this[EtfStockList.etfStockCode] = data.etfStockCode
                         this[EtfStockList.stockCode] = data.stockCode
                         this[EtfStockList.etfPercent] = data.etfPercent
-                        this[EtfStockList.regDate] = Clock.System.now().toLocalDateTime(kstTimezone)
+                        this[EtfStockList.checkDate] = Clock.System.now().toLocalDateTime(kstTimezone)
                     }
 
                     EtfStockList.deleteWhere {
-                        EtfStockList.regDate less Clock.System.now()
+                        EtfStockList.checkDate less Clock.System.now()
                             .minus(15, DateTimeUnit.DAY, kstTimezone)
                             .toLocalDateTime(kstTimezone)
                     }
@@ -174,149 +169,12 @@ class EtfStocksSyncService : KoinComponent {
             }
 
             //파일 삭제
-            removeDirectory(EtfPublisher.NOMURA.folderName)
-            removeDirectory(EtfPublisher.GLOBALX.folderName)
-            removeDirectory(EtfPublisher.ASSET.folderName)
-            removeDirectory(EtfPublisher.MITSUBISHI.folderName)
-            removeDirectory(EtfPublisher.AMOVA.folderName)
-            removeDirectory(EtfPublisher.SIMPLEX.folderName)
+            etfFileHandler.removeDirectory(EtfPublisher.NOMURA.folderName)
+            etfFileHandler.removeDirectory(EtfPublisher.GLOBALX.folderName)
+            etfFileHandler.removeDirectory(EtfPublisher.ASSET.folderName)
+            etfFileHandler.removeDirectory(EtfPublisher.MITSUBISHI.folderName)
+            etfFileHandler.removeDirectory(EtfPublisher.AMOVA.folderName)
+            etfFileHandler.removeDirectory(EtfPublisher.SIMPLEX.folderName)
         }
-    }
-
-    private suspend fun downloadExcelFile(fileUrl: String, folderName: String, fileNm: String) {
-        HttpClient(CIO) {
-            install(HttpTimeout) {
-                requestTimeoutMillis = 30000
-            }
-        }.use { client ->
-            try {
-                val response: HttpResponse = client.get(fileUrl)
-
-                if (response.status.isSuccess()) {
-                    val bytes = response.body<ByteArray>()
-                    val file = File("${excelDir}/${folderName}/${fileNm}")
-
-                    FileOutputStream(file).use { outputStream ->
-                        outputStream.write(bytes)
-                    }
-                }
-            } catch (e: Exception) {
-                e.printStackTrace()
-            }
-        }
-    }
-
-    private suspend fun readDirectoryToStringList(folderName: String, skip: Int): Map<String, List<String>> {
-        val directory = File("${excelDir}/${folderName}")
-
-        if (!directory.exists() || !directory.isDirectory) {
-            println("유효한 디렉터리 경로가 아닙니다: $directory")
-            return emptyMap()
-        }
-
-        val filesList = directory.listFiles()?.filter { it.isFile } ?: return emptyMap()
-
-        if (filesList.isEmpty()) {
-            return emptyMap()
-        }
-
-        return coroutineScope {
-            val deferredReads = filesList.map { file ->
-                async(Dispatchers.IO) {
-                    readDataFile(file, skip)
-                }
-            }.awaitAll()
-
-            deferredReads.fold(mutableMapOf()) { acc, map ->
-                acc.apply { putAll(map) }
-            }
-        }
-    }
-
-    private fun readDataFile(file: File, skip: Int): Map<String, List<String>> {
-        val resultList = mutableListOf<String>()
-        println("file :: ${file.path}")
-
-        if (file.isFile && file.exists()) {
-            when (file.toPath().extension) {
-                "csv" -> {
-                    ReaderFactory
-                        .createBufferedReader(file, Charset.forName("UTF-8"))
-                        .use { reader ->
-                            reader.lineSequence()
-                                .drop(skip)
-                                .forEach { line ->
-                                    resultList.add(line)
-                                }
-                        }
-                }
-
-                //factory가 정상적으로 xls 못읽어서 직접읽음
-                "xls" -> {
-                    file.inputStream().use { stream ->
-                        HSSFWorkbook(stream).use { workbook ->
-                            resultList.addAll(readExcelData(workbook, skip))
-                        }
-                    }
-                }
-
-                "xlsx" -> {
-                    file.inputStream().use { stream ->
-                        XSSFWorkbook(stream).use { workbook ->
-                            resultList.addAll(readExcelData(workbook, skip))
-                        }
-                    }
-                }
-            }
-        }
-
-        return mapOf(
-            file.name.split("_")[0] to resultList
-        )
-    }
-
-    private fun removeDirectory(folderName: String) {
-        val directory = File("${excelDir}/${folderName}")
-
-        if (directory.exists() && directory.isDirectory) {
-            directory.listFiles()
-                ?.filter { it.isFile }
-                ?.forEach { it.delete() }
-        }
-    }
-
-    private fun readExcelData(workbook: Workbook, skip: Int): List<String> {
-        val resultList = mutableListOf<String>()
-        var rows = workbook.getSheetAt(0)
-
-        if (rows.lastRowNum < 10 && workbook.numberOfSheets > 1) {
-            rows = workbook.getSheetAt(1)
-        }
-
-        for (row in rows.drop(skip)) {
-            var blankCellCnt = 0
-            var s = ""
-
-            for (cell in row) {
-                val cellValue = when (cell.cellType) {
-                    CellType.STRING -> cell.stringCellValue
-                    CellType.NUMERIC -> cell.numericCellValue.toString()
-                    CellType.BOOLEAN -> cell.booleanCellValue.toString()
-                    else -> {
-                        blankCellCnt++
-                        ""
-                    }
-                }
-                s += "${cellValue},"
-            }
-
-            if (blankCellCnt == row.physicalNumberOfCells) {
-                break
-            }
-
-            resultList.add(s)
-        }
-
-        return resultList.toList()
     }
 }

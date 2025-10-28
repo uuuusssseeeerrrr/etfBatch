@@ -38,8 +38,8 @@ val restClient = module {
             engine {
                 endpoint {
                     maxConnectionsPerRoute = 10
-                    keepAliveTime = 100000
-                    connectTimeout = 100000
+                    keepAliveTime = 30000
+                    connectTimeout = 30000
                     connectAttempts = 5
                 }
             }

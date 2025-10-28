@@ -1,5 +1,6 @@
 package com.ietf.etfbatch.config
 
+import com.ietf.etfbatch.etf.service.EtfFileHandler
 import com.ietf.etfbatch.etf.service.EtfStocksSyncService
 import com.ietf.etfbatch.etf.service.ProcessData
 import com.ietf.etfbatch.etf.service.StockListSyncService
@@ -23,8 +24,21 @@ fun Application.koinConfig() {
         singleOf(::KisStockPriceService)
         singleOf(::StockRemoveService)
         singleOf(::RateService)
-        singleOf(::EtfStocksSyncService)
         singleOf(::StockListSyncService)
+        singleOf(::EtfFileHandler)
+
+        single {
+            EtfStocksSyncService(
+                etfFileHandler = get(),
+                processorAmova = get(named("amova")),
+                processorAsset = get(named("asset")),
+                processorGlobalx = get(named("globalx")),
+                processorMitsubishi = get(named("mitsubishi")),
+                processorNomura = get(named("nomura")),
+                processorSimplex = get(named("simplex"))
+            )
+        }
+
 
         single<ProcessData>(named("amova")) { ProcessAmovaData() }
         single<ProcessData>(named("asset")) { ProcessAssetData() }

@@ -1,11 +1,11 @@
 package com.ietf.etfbatch.stock.service
 
-import com.ietf.etfbatch.table.EtfPriceHistory
-import com.ietf.etfbatch.table.StockPriceHistory
-import com.ietf.etfbatch.table.Token
+import com.ietf.etfbatch.table.*
 import kotlinx.datetime.*
 import org.jetbrains.exposed.v1.core.lessEq
+import org.jetbrains.exposed.v1.core.notInSubQuery
 import org.jetbrains.exposed.v1.jdbc.deleteWhere
+import org.jetbrains.exposed.v1.jdbc.select
 import org.jetbrains.exposed.v1.jdbc.transactions.transaction
 import kotlin.time.Clock
 import kotlin.time.ExperimentalTime
@@ -37,6 +37,15 @@ class StockRemoveService() {
             Token.deleteWhere {
                 Token.regDate.lessEq(targetDateFormat)
             }
+        }
+    }
+
+    /**
+     * 사용하지 않는 종목 정보 삭제
+     */
+    fun removeUnusedStockInfo() {
+        StockList.deleteWhere {
+            StockList.stockCode notInSubQuery EtfStockList.select(EtfStockList.stockCode)
         }
     }
 }
