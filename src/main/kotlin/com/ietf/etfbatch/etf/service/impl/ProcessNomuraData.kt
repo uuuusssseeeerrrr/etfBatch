@@ -1,12 +1,13 @@
 package com.ietf.etfbatch.etf.service.impl
 
-import com.ietf.etfbatch.etf.service.ProcessData
+import com.ietf.etfbatch.etf.service.interfaces.ProcessData
 import com.ietf.etfbatch.etf.util.removeCharEtfName
 import com.ietf.etfbatch.table.EtfStockListRecord
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.async
 import kotlinx.coroutines.awaitAll
 import kotlinx.coroutines.coroutineScope
+import java.math.BigDecimal
 
 class ProcessNomuraData : ProcessData {
     override suspend fun processData(data: Map<String, List<String>>): List<EtfStockListRecord> {
@@ -18,9 +19,10 @@ class ProcessNomuraData : ProcessData {
 
                         if (splitData.size > 7 && splitData[1][0].isDigit()) {
                             EtfStockListRecord(
+                                "TSE",
                                 key,
                                 if (splitData[1].length == 5) splitData[1].replace("R", "") else splitData[1],
-                                splitData[6].toFloat()
+                                BigDecimal(splitData[6])
                             )
                         } else {
                             null

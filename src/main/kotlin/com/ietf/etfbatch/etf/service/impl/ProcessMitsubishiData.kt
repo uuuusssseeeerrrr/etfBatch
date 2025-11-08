@@ -1,13 +1,13 @@
 package com.ietf.etfbatch.etf.service.impl
 
-import com.ietf.etfbatch.etf.service.ProcessData
+import com.ietf.etfbatch.etf.service.interfaces.ProcessData
 import com.ietf.etfbatch.etf.util.removeCharEtfName
 import com.ietf.etfbatch.table.EtfStockListRecord
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.async
 import kotlinx.coroutines.awaitAll
 import kotlinx.coroutines.coroutineScope
-import kotlin.math.round
+import java.math.BigDecimal
 
 class ProcessMitsubishiData : ProcessData {
     override suspend fun processData(data: Map<String, List<String>>): List<EtfStockListRecord> {
@@ -30,9 +30,13 @@ class ProcessMitsubishiData : ProcessData {
                                 if (value.toFloat() > 0) {
                                     add(
                                         EtfStockListRecord(
+                                            "TSE",
                                             key,
                                             splitData[1],
-                                            round((value.toFloat() / 100) * 10000) / 10000
+                                            BigDecimal(value)
+                                                .divide(BigDecimal(100))
+                                                .multiply(BigDecimal(10000))
+                                                .divide(BigDecimal(10000))
                                         )
                                     )
                                 }

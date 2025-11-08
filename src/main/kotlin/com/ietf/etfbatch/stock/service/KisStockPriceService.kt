@@ -3,10 +3,8 @@ package com.ietf.etfbatch.stock.service
 import com.ietf.etfbatch.stock.dto.KisPriceDetailOutput
 import com.ietf.etfbatch.stock.dto.KisPriceDetailResponse
 import com.ietf.etfbatch.stock.dto.StockObject
-import com.ietf.etfbatch.table.EtfList
-import com.ietf.etfbatch.table.EtfPriceHistory
-import com.ietf.etfbatch.table.StockList
-import com.ietf.etfbatch.table.StockPriceHistory
+import com.ietf.etfbatch.stock.enum.PrdtTypeCd
+import com.ietf.etfbatch.table.*
 import com.ietf.etfbatch.token.service.KisTokenService
 import io.ktor.client.*
 import io.ktor.client.call.*
@@ -15,10 +13,13 @@ import io.ktor.client.statement.*
 import kotlinx.coroutines.delay
 import kotlinx.datetime.TimeZone
 import kotlinx.datetime.toLocalDateTime
+import org.jetbrains.exposed.v1.core.eq
 import org.jetbrains.exposed.v1.jdbc.batchInsert
+import org.jetbrains.exposed.v1.jdbc.insert
 import org.jetbrains.exposed.v1.jdbc.select
 import org.jetbrains.exposed.v1.jdbc.transactions.transaction
 import org.slf4j.LoggerFactory
+import java.time.LocalTime
 import kotlin.time.Clock
 import kotlin.time.ExperimentalTime
 
@@ -36,11 +37,14 @@ class KisStockPriceService(
     /**
      * ETF 가격정보 가져오기
      */
-    suspend fun getEtfPrice() {
+    suspend fun getEtfPrice(market: String) {
+        val now = Clock.System.now().toLocalDateTime(TimeZone.of("Asia/Seoul"))
         val targetEtfList = transaction {
-            EtfList.select(EtfList.market, EtfList.stockCode).map { row ->
-                StockObject(row[EtfList.market], row[EtfList.stockCode])
-            }.toList()
+            EtfList.select(EtfList.market, EtfList.stockCode)
+                .where { EtfList.market eq market }
+                .map { row ->
+                    StockObject(row[EtfList.market], row[EtfList.stockCode])
+                }.toList()
         }
 
         if (targetEtfList.isNotEmpty()) {
@@ -48,7 +52,7 @@ class KisStockPriceService(
 
             transaction {
                 EtfPriceHistory.batchInsert(etfApiResultList, shouldReturnGeneratedValues = false) { result ->
-                    this[EtfPriceHistory.market] = result.market ?: "TSE"
+                    this[EtfPriceHistory.market] = market
                     this[EtfPriceHistory.stockCode] = result.stockCode ?: ""
                     this[EtfPriceHistory.open] = result.open
                     this[EtfPriceHistory.high] = result.high
@@ -61,9 +65,17 @@ class KisStockPriceService(
                     this[EtfPriceHistory.tXdif] = result.tXdif
                     this[EtfPriceHistory.tXrat] = result.tXrat
                     this[EtfPriceHistory.tRate] = result.tRate
-                    this[EtfPriceHistory.regDate] =
-                        Clock.System.now().toLocalDateTime(TimeZone.of("Asia/Seoul"))
+                    this[EtfPriceHistory.regDate] = now
                 }
+            }
+        }
+
+        transaction {
+            PriceApiCallHistories.insert {
+                it[PriceApiCallHistories.market] = market
+                it[PriceApiCallHistories.successYn] = "Y"
+                it[PriceApiCallHistories.esYn] = "E"
+                it[PriceApiCallHistories.regDate] = now
             }
         }
     }
@@ -71,9 +83,11 @@ class KisStockPriceService(
     /**
      * 종목별 가격정보 가져오기
      */
-    suspend fun getStockPrice() {
+    suspend fun getStockPrice(market: String) {
+        val now = Clock.System.now().toLocalDateTime(TimeZone.of("Asia/Seoul"))
         val targetStockList = transaction {
             StockList.select(StockList.market, StockList.stockCode)
+                .where { StockList.market eq market }
                 .map { row -> StockObject(row[StockList.market], row[StockList.stockCode]) }
                 .toList()
         }
@@ -83,7 +97,7 @@ class KisStockPriceService(
 
             transaction {
                 StockPriceHistory.batchInsert(stockApiResultList, shouldReturnGeneratedValues = false) { result ->
-                    this[StockPriceHistory.market] = result.market ?: "TSE"
+                    this[StockPriceHistory.market] = market
                     this[StockPriceHistory.stockCode] = result.stockCode ?: ""
                     this[StockPriceHistory.open] = result.open
                     this[StockPriceHistory.high] = result.high
@@ -102,9 +116,17 @@ class KisStockPriceService(
                     this[StockPriceHistory.epsx] = result.epsx
                     this[StockPriceHistory.bpsx] = result.bpsx
                     this[StockPriceHistory.eIcod] = result.eIcod
-                    this[StockPriceHistory.regDate] =
-                        Clock.System.now().toLocalDateTime(TimeZone.of("Asia/Seoul"))
+                    this[StockPriceHistory.regDate] = now
                 }
+            }
+        }
+
+        transaction {
+            PriceApiCallHistories.insert {
+                it[PriceApiCallHistories.market] = market
+                it[PriceApiCallHistories.successYn] = "Y"
+                it[PriceApiCallHistories.esYn] = "S"
+                it[PriceApiCallHistories.regDate] = now
             }
         }
     }
@@ -112,13 +134,24 @@ class KisStockPriceService(
     private suspend fun getPriceInfo(targetList: List<StockObject>): List<KisPriceDetailOutput> {
         val apiResultList = mutableListOf<KisPriceDetailOutput>()
         val token = kisTokenService.getKisAccessToken()
+        val type = setOf("NYS", "NAS", "AMS")
+        val startBoundary = LocalTime.of(8, 59)
+        val endBoundary = LocalTime.of(22, 31)
+        val currentTime = LocalTime.now()
 
         for (stock in targetList) {
             val startTime = System.currentTimeMillis()
+            var market = stock.market
+
+            if (market in type &&
+                (currentTime.isAfter(startBoundary) && currentTime.isBefore(endBoundary))
+            ) {
+                market = PrdtTypeCd.findDayMarketCodeByMarketCode(market)
+            }
 
             val kisPriceHttpResponse: HttpResponse = httpClient.get("/uapi/overseas-price/v1/quotations/price-detail") {
                 url {
-                    parameters.append("EXCD", stock.market)
+                    parameters.append("EXCD", market)
                     parameters.append("SYMB", stock.stockCode)
                 }
 

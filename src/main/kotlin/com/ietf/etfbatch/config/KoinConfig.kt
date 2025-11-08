@@ -2,9 +2,10 @@ package com.ietf.etfbatch.config
 
 import com.ietf.etfbatch.etf.service.EtfFileHandler
 import com.ietf.etfbatch.etf.service.EtfStocksSyncService
-import com.ietf.etfbatch.etf.service.ProcessData
 import com.ietf.etfbatch.etf.service.StockListSyncService
 import com.ietf.etfbatch.etf.service.impl.*
+import com.ietf.etfbatch.etf.service.interfaces.ProcessData
+import com.ietf.etfbatch.etf.service.interfaces.SyncData
 import com.ietf.etfbatch.rate.service.RateService
 import com.ietf.etfbatch.stock.service.KisStockInfoService
 import com.ietf.etfbatch.stock.service.KisStockPriceService
@@ -29,6 +30,13 @@ fun Application.koinConfig() {
 
         single {
             EtfStocksSyncService(
+                get(named("usa")),
+                get(named("japan"))
+            )
+        }
+
+        single<SyncData>(named("japan")) {
+            JapanEtfStockSyncService(
                 etfFileHandler = get(),
                 processorAmova = get(named("amova")),
                 processorAsset = get(named("asset")),
@@ -39,6 +47,12 @@ fun Application.koinConfig() {
             )
         }
 
+        single<SyncData>(named("usa")) {
+            UsaEtfStockSyncService(
+                processorInvesco = get(named("invesco")),
+                processorProShares = get(named("proshares"))
+            )
+        }
 
         single<ProcessData>(named("amova")) { ProcessAmovaData() }
         single<ProcessData>(named("asset")) { ProcessAssetData() }
@@ -46,6 +60,8 @@ fun Application.koinConfig() {
         single<ProcessData>(named("mitsubishi")) { ProcessMitsubishiData() }
         single<ProcessData>(named("nomura")) { ProcessNomuraData() }
         single<ProcessData>(named("simplex")) { ProcessSimplexData() }
+        single<ProcessData>(named("invesco")) { ProcessInvescoData(get()) }
+        single<ProcessData>(named("proshares")) { ProcessProSharesData() }
     }
 
     install(Koin) {

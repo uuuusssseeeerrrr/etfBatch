@@ -50,6 +50,12 @@ val restClient = module {
                     level = LogLevel.ALL
                 }
             }
+
+            install(HttpTimeout) {
+                requestTimeoutMillis = 1000000  // 5분
+                connectTimeoutMillis = 600000   // 1분
+                socketTimeoutMillis = 600000    // 1분
+            }
         }
     }
 }

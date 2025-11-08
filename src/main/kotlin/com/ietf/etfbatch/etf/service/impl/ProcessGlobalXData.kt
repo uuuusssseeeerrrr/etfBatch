@@ -1,6 +1,6 @@
 package com.ietf.etfbatch.etf.service.impl
 
-import com.ietf.etfbatch.etf.service.ProcessData
+import com.ietf.etfbatch.etf.service.interfaces.ProcessData
 import com.ietf.etfbatch.table.EtfStockListRecord
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.async
@@ -17,7 +17,7 @@ class ProcessGlobalXData : ProcessData {
                 async(Dispatchers.Default) {
                     value.map { data ->
                         val splitData = data.split(",")
-                        splitData[5].toBigDecimal() * splitData[6].toBigDecimal()
+                        splitData[5].toBigDecimal().multiply(splitData[6].toBigDecimal())
                     }.fold(BigDecimal(0)) { acc, bigDecimal -> acc.add(bigDecimal) }
                 }
             }
@@ -32,10 +32,11 @@ class ProcessGlobalXData : ProcessData {
 
                         if (splitData.size > 5 && !splitData[0].isBlank()) {
                             EtfStockListRecord(
+                                "TSE",
                                 key,
                                 splitData[0],
-                                (splitData[5].toBigDecimal() * splitData[6].toBigDecimal())
-                                    .divide(totalAmount, 8, RoundingMode.HALF_UP).toFloat()
+                                (splitData[5].toBigDecimal().multiply(splitData[6].toBigDecimal()))
+                                    .divide(totalAmount, 8, RoundingMode.HALF_UP)
                             )
                         } else {
                             null

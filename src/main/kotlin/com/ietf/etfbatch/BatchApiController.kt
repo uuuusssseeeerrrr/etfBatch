@@ -28,9 +28,13 @@ fun Application.configureRouting() {
      */
     routing {
         authenticate("tokenAuth") {
+            /**
+             * 가격조회 API
+             */
             post("/prices/etf") {
                 try {
-                    kisStockPriceService.getEtfPrice()
+                    call.request.queryParameters["market"]?.let { kisStockPriceService.getEtfPrice(it) }
+
                 } catch (e: Exception) {
                     logger.error(e)
                     call.respondText(
@@ -46,7 +50,7 @@ fun Application.configureRouting() {
 
             post("/prices/stock") {
                 try {
-                    kisStockPriceService.getStockPrice()
+                    call.request.queryParameters["market"]?.let { kisStockPriceService.getStockPrice(it) }
                 } catch (e: Exception) {
                     logger.error(e)
                     call.respondText(
@@ -58,38 +62,6 @@ fun Application.configureRouting() {
                 }
 
                 call.respondText("stock 요청 처리됨")
-            }
-
-            post("/stock-infos") {
-                try {
-                    kisStockInfoService.kisInfo()
-                } catch (e: Exception) {
-                    logger.error(e)
-                    call.respondText(
-                        text = "kisInfo 요청중 오류발생",
-                        status = HttpStatusCode.InternalServerError
-                    )
-
-                    return@post
-                }
-
-                call.respondText("kisInfo 요청 처리됨")
-            }
-
-            post("/histories/cleanup") {
-                try {
-                    stockRemoveService.removeOldHistory()
-                } catch (e: Exception) {
-                    logger.error(e)
-                    call.respondText(
-                        text = "오래된데이터 삭제배치중 오류발생",
-                        status = HttpStatusCode.InternalServerError
-                    )
-
-                    return@post
-                }
-
-                call.respondText("오래된데이터 삭제배치 완료")
             }
 
             post("/rate") {
@@ -106,6 +78,44 @@ fun Application.configureRouting() {
                 }
 
                 call.respondText("환율조회완료")
+            }
+
+            /**
+             * 클린업
+             */
+            post("/histories/cleanup") {
+                try {
+                    stockRemoveService.removeOldHistory()
+                } catch (e: Exception) {
+                    logger.error(e)
+                    call.respondText(
+                        text = "오래된데이터 삭제배치중 오류발생",
+                        status = HttpStatusCode.InternalServerError
+                    )
+
+                    return@post
+                }
+
+                call.respondText("오래된데이터 삭제배치 완료")
+            }
+
+            /**
+             * 정보조회 API
+             */
+            post("/stock-infos") {
+                try {
+                    kisStockInfoService.kisInfo()
+                } catch (e: Exception) {
+                    logger.error(e)
+                    call.respondText(
+                        text = "kisInfo 요청중 오류발생",
+                        status = HttpStatusCode.InternalServerError
+                    )
+
+                    return@post
+                }
+
+                call.respondText("kisInfo 요청 처리됨")
             }
 
             post("/etf-stocks/sync") {

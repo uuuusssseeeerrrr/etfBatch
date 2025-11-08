@@ -1,11 +1,12 @@
 package com.ietf.etfbatch.etf.service.impl
 
-import com.ietf.etfbatch.etf.service.ProcessData
+import com.ietf.etfbatch.etf.service.interfaces.ProcessData
 import com.ietf.etfbatch.table.EtfStockListRecord
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.async
 import kotlinx.coroutines.awaitAll
 import kotlinx.coroutines.coroutineScope
+import java.math.BigDecimal
 
 class ProcessAmovaData : ProcessData {
     override suspend fun processData(data: Map<String, List<String>>): List<EtfStockListRecord> {
@@ -18,11 +19,12 @@ class ProcessAmovaData : ProcessData {
                         val splitData = data.split(",")
 
                         if (splitData[0] in type) {
-                            val value = splitData[9].toFloat()
+                            val value = splitData[9]
                             EtfStockListRecord(
+                                "TSE",
                                 key,
                                 splitData[1],
-                                if (value > 100) splitData[10].toFloat() else value
+                                BigDecimal(if (value.toDouble() > 100) splitData[10] else value)
                             )
                         } else {
                             null

@@ -1,5 +1,6 @@
 package com.ietf.etfbatch.etf.service
 
+import com.ietf.etfbatch.stock.service.KisStockInfoService
 import com.ietf.etfbatch.stock.service.StockRemoveService
 import com.ietf.etfbatch.table.EtfStockList
 import com.ietf.etfbatch.table.StockList
@@ -9,7 +10,7 @@ import org.jetbrains.exposed.v1.core.JoinType
 import org.jetbrains.exposed.v1.core.and
 import org.jetbrains.exposed.v1.core.eq
 import org.jetbrains.exposed.v1.core.isNull
-import org.jetbrains.exposed.v1.jdbc.insert
+import org.jetbrains.exposed.v1.jdbc.batchInsert
 import org.jetbrains.exposed.v1.jdbc.select
 import org.jetbrains.exposed.v1.jdbc.transactions.transaction
 import org.koin.core.component.KoinComponent
@@ -20,9 +21,10 @@ import kotlin.time.ExperimentalTime
 
 class StockListSyncService : KoinComponent {
     val stockRemoveService by inject<StockRemoveService>()
+    val kisStockInfoService by inject<KisStockInfoService>()
 
     @OptIn(ExperimentalTime::class)
-    fun syncStockList() {
+    suspend fun syncStockList() {
         val today = Clock.System.now().toLocalDateTime(TimeZone.of("Asia/Seoul"))
 
         transaction {
@@ -40,15 +42,22 @@ class StockListSyncService : KoinComponent {
                 .withDistinct()
                 .toList()
 
-            newStockList.forEach { row ->
-                StockList.insert {
-                    it[StockList.market] = row[EtfStockList.market]
-                    it[StockList.stockCode] = row[EtfStockList.stockCode]
-                    it[StockList.regDate] = today
+            if (newStockList.isNotEmpty()) {
+                StockList.batchInsert(newStockList) { row ->
+                    this[StockList.market] = row[EtfStockList.market]
+                    this[StockList.stockCode] = row[EtfStockList.stockCode]
+                    this[StockList.regDate] = today
+                    this[StockList.modDate] = today
                 }
             }
 
             stockRemoveService.removeUnusedStockInfo()
+        }
+
+        kisStockInfoService.getStockInfo()
+
+        transaction {
+            stockRemoveService.removeUnCorrectedStockInfo()
         }
     }
 }

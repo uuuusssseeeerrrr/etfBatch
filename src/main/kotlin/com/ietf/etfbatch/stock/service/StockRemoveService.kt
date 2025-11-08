@@ -2,6 +2,7 @@ package com.ietf.etfbatch.stock.service
 
 import com.ietf.etfbatch.table.*
 import kotlinx.datetime.*
+import org.jetbrains.exposed.v1.core.isNull
 import org.jetbrains.exposed.v1.core.lessEq
 import org.jetbrains.exposed.v1.core.notInSubQuery
 import org.jetbrains.exposed.v1.jdbc.deleteWhere
@@ -46,6 +47,15 @@ class StockRemoveService() {
     fun removeUnusedStockInfo() {
         StockList.deleteWhere {
             StockList.stockCode notInSubQuery EtfStockList.select(EtfStockList.stockCode)
+        }
+    }
+
+    /**
+     * 사용하지 않는 종목 정보 삭제
+     */
+    fun removeUnCorrectedStockInfo() {
+        StockList.deleteWhere {
+            StockList.stdPdno.isNull()
         }
     }
 }

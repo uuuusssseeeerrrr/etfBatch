@@ -3,6 +3,7 @@ package com.ietf.etfbatch.stock.service
 import com.ietf.etfbatch.stock.dto.KisInfoOutput
 import com.ietf.etfbatch.stock.dto.KisInfoResponse
 import com.ietf.etfbatch.stock.dto.StockObject
+import com.ietf.etfbatch.stock.enum.PrdtTypeCd
 import com.ietf.etfbatch.table.EtfList
 import com.ietf.etfbatch.table.StockList
 import com.ietf.etfbatch.token.service.KisTokenService
@@ -42,7 +43,7 @@ class KisStockInfoService(
     /**
      * ETF 정보 가져오기
      */
-    private suspend fun getEtfInfo() {
+    suspend fun getEtfInfo() {
         val newEtfList = transaction {
             EtfList.select(EtfList.market, EtfList.stockCode)
                 .where { (EtfList.stdPdno.isNull()) or (EtfList.stdPdno.trim().eq("")) }
@@ -73,7 +74,7 @@ class KisStockInfoService(
     }
 
     @OptIn(ExperimentalTime::class)
-    private suspend fun getStockInfo() {
+    suspend fun getStockInfo() {
         val newStockList = transaction {
             StockList.select(StockList.market, StockList.stockCode)
                 .where { (StockList.stdPdno.isNull()) or (StockList.stdPdno.trim().eq("")) }
@@ -120,20 +121,17 @@ class KisStockInfoService(
 
     private suspend fun getInfo(targetList: List<StockObject>): List<KisInfoOutput> {
         val apiResultList = mutableListOf<KisInfoOutput>()
-        var marketCode: String
         val token = kisTokenService.getKisAccessToken()
 
         for (stock in targetList) {
             val startTime = System.currentTimeMillis()
-            marketCode = if (stock.market == "TSE") "515" else "512"
-
             val kisApiResult = httpClient.get("/uapi/overseas-price/v1/quotations/search-info") {
                 header("authorization", "Bearer $token")
                 header("tr_id", SEARCH_INFO_TR_ID)
                 header("custtype", "P")
 
                 url {
-                    parameters.append("PRDT_TYPE_CD", marketCode)
+                    parameters.append("PRDT_TYPE_CD", PrdtTypeCd.findInfoCodeByMarketCode(stock.market).toString())
                     parameters.append("PDNO", stock.stockCode)
                 }
             }.body<KisInfoResponse>()

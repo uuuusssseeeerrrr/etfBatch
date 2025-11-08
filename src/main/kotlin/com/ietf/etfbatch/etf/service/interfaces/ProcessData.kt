@@ -1,4 +1,4 @@
-package com.ietf.etfbatch.etf.service
+package com.ietf.etfbatch.etf.service.interfaces
 
 import com.ietf.etfbatch.table.EtfStockListRecord
 
