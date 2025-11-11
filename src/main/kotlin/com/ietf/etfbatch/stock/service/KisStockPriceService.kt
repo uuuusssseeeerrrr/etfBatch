@@ -39,6 +39,11 @@ class KisStockPriceService(
      */
     suspend fun getEtfPrice(market: String) {
         val now = Clock.System.now().toLocalDateTime(TimeZone.of("Asia/Seoul"))
+
+        if (market == "TSE" && (now.hour !in 9..16)) {
+            return
+        }
+
         val targetEtfList = transaction {
             EtfList.select(EtfList.market, EtfList.stockCode)
                 .where { EtfList.market eq market }
@@ -85,6 +90,11 @@ class KisStockPriceService(
      */
     suspend fun getStockPrice(market: String) {
         val now = Clock.System.now().toLocalDateTime(TimeZone.of("Asia/Seoul"))
+
+        if (market == "TSE" && (now.hour !in 9..16)) {
+            return
+        }
+
         val targetStockList = transaction {
             StockList.select(StockList.market, StockList.stockCode)
                 .where { StockList.market eq market }
@@ -136,7 +146,7 @@ class KisStockPriceService(
         val token = kisTokenService.getKisAccessToken()
         val type = setOf("NYS", "NAS", "AMS")
         val startBoundary = LocalTime.of(8, 59)
-        val endBoundary = LocalTime.of(22, 31)
+        val endBoundary = LocalTime.of(17, 59)
         val currentTime = LocalTime.now()
 
         for (stock in targetList) {
