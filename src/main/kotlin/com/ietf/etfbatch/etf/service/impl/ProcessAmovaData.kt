@@ -19,7 +19,7 @@ class ProcessAmovaData : ProcessData {
                         val splitData = data.split(",")
 
                         if (splitData[0] in type) {
-                            val value = splitData[9]
+                            val value = splitData[9].replace("%", "")
                             EtfStockListRecord(
                                 "TSE",
                                 key,

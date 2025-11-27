@@ -27,7 +27,7 @@ enum class EtfPublisher(
     ),
     AMOVA(
         "amova",
-        "https://www.amova-am.com/files/etf/_shared/xls/portfolio/%s_%s.xls",
+        "https://global.amova-am.com/docs/default-source/jp-library/funds/portfolio/%s_PORTFOLIO.xls",
         14
     ),
     SIMPLEX(

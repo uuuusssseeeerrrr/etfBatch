@@ -13,10 +13,14 @@ import kotlinx.coroutines.coroutineScope
 import java.math.BigDecimal
 
 class ProcessInvescoData(val httpClient: HttpClient) : ProcessData {
+    companion object {
+        val levereageEtfList : Array<String> = arrayOf("QLD")
+    }
+
     override suspend fun processData(data: Map<String, List<String>>): List<EtfStockListRecord> {
         return coroutineScope {
             data.mapNotNull { (key, value) ->
-                if (!key.isEmpty() && !value.isEmpty() && value[0] != "") {
+                if (!key.isEmpty() && !value.isEmpty() && value[0] != "" && key !in levereageEtfList) {
                     async(Dispatchers.IO) {
                         getData(key, value[0])
                     }

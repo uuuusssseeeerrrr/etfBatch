@@ -1,10 +1,10 @@
 [versions]
-exposed = "1.0.0-rc-2"
+exposed = "1.0.0-rc-3"
 kotlin = "2.2.21"
 ktor = "3.3.2"
-logback = "1.5.20"
+logback = "1.5.21"
 koin-bom = "4.1.1"
-poi = "5.4.1"
+poi = "5.5.0"
 
 [libraries]
 ktor-server-core = { module = "io.ktor:ktor-server-core", version.ref = "ktor" }
@@ -42,7 +42,7 @@ poi-core = { module = "org.apache.poi:poi", version.ref = "poi" }
 poi-ooxml = { module = "org.apache.poi:poi-ooxml", version.ref = "poi" }
 log4j-to-slf4j = { module = "org.apache.logging.log4j:log4j-to-slf4j", version = "2.25.2" }
 
-oci-sdk-bom = { module = "com.oracle.oci.sdk:oci-java-sdk-bom", version = "3.74.3" }
+oci-sdk-bom = { module = "com.oracle.oci.sdk:oci-java-sdk-bom", version = "3.77.0" }
 oci-sdk-secrets = { module = "com.oracle.oci.sdk:oci-java-sdk-secrets" }
 oci-sdk-jersey3 = { module = "com.oracle.oci.sdk:oci-java-sdk-common-httpclient-jersey3" }
 
