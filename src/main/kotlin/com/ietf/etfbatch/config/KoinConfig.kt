@@ -1,5 +1,6 @@
 package com.ietf.etfbatch.config
 
+import com.ietf.etfbatch.RoutingClass
 import com.ietf.etfbatch.etf.service.EtfFileHandler
 import com.ietf.etfbatch.etf.service.EtfStocksSyncService
 import com.ietf.etfbatch.etf.service.StockListSyncService
@@ -27,6 +28,7 @@ fun Application.koinConfig() {
         singleOf(::RateService)
         singleOf(::StockListSyncService)
         singleOf(::EtfFileHandler)
+        singleOf(::RoutingClass)
 
         single {
             EtfStocksSyncService(

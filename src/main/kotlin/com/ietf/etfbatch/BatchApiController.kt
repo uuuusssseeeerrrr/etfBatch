@@ -12,21 +12,25 @@ import io.ktor.server.auth.*
 import io.ktor.server.response.*
 import io.ktor.server.routing.*
 import io.ktor.util.logging.*
-import org.koin.ktor.ext.inject
 
-fun Application.configureRouting() {
-    val logger = environment.log
-    val kisStockInfoService by inject<KisStockInfoService>()
-    val kisStockPriceService by inject<KisStockPriceService>()
-    val stockRemoveService by inject<StockRemoveService>()
-    val rateService by inject<RateService>()
-    val etfStocksSyncService by inject<EtfStocksSyncService>()
-    val stockListSyncService by inject<StockListSyncService>()
+data class RoutingClass(
+    val kisStockInfoService: KisStockInfoService,
+    val kisStockPriceService: KisStockPriceService,
+    val stockRemoveService: StockRemoveService,
+    val rateService: RateService,
+    val etfStocksSyncService: EtfStocksSyncService,
+    val stockListSyncService: StockListSyncService
+)
+
+fun RoutingClass.configureRouting(
+    app: Application
+) {
+    val logger = app.environment.log
 
     /**
      * 나중에 코드가 길어지면 분리하기
      */
-    routing {
+    app.routing {
         authenticate("tokenAuth") {
             /**
              * 가격조회 API
