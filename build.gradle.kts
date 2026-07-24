@@ -53,7 +53,6 @@ dependencies {
     implementation(libs.oci.sdk.jersey3)
     implementation(libs.juniversalchardet)
     implementation(libs.jsoup)
-    implementation(libs.ktor.client.plugins)
 
     testImplementation(libs.ktor.server.test.host)
     testImplementation(libs.kotlin.test)
