@@ -1,5 +1,6 @@
 package com.ietf.etfbatch.stock.service
 
+import com.ietf.etfbatch.config.VaultConfig
 import com.ietf.etfbatch.stock.dto.KisPriceDetailOutput
 import com.ietf.etfbatch.stock.dto.KisPriceDetailResponse
 import com.ietf.etfbatch.stock.dto.StockObject
@@ -18,12 +19,13 @@ import org.jetbrains.exposed.v1.jdbc.batchInsert
 import org.jetbrains.exposed.v1.jdbc.insert
 import org.jetbrains.exposed.v1.jdbc.select
 import org.jetbrains.exposed.v1.jdbc.transactions.transaction
+import org.koin.core.annotation.Single
 import org.slf4j.LoggerFactory
 import java.time.LocalTime
 import kotlin.time.Clock
-import kotlin.time.ExperimentalTime
+import kotlin.time.Duration.Companion.milliseconds
 
-@OptIn(ExperimentalTime::class)
+@Single
 class KisStockPriceService(
     val httpClient: HttpClient,
     private val kisTokenService: KisTokenService
@@ -31,6 +33,7 @@ class KisStockPriceService(
     companion object {
         const val PRICE_DETAIL_TR_ID = "HHDFS76200200"
         const val MIN_INTERVAL = 112L
+        private const val KIS_BASE_URL = "https://openapi.koreainvestment.com:9443"
         private val logger = LoggerFactory.getLogger(KisStockPriceService::class.java)
     }
 
@@ -144,6 +147,8 @@ class KisStockPriceService(
     private suspend fun getPriceInfo(targetList: List<StockObject>): List<KisPriceDetailOutput> {
         val apiResultList = mutableListOf<KisPriceDetailOutput>()
         val token = kisTokenService.getKisAccessToken()
+        val appKey = VaultConfig.getVaultSecret("kis_key")
+        val appSecret = VaultConfig.getVaultSecret("kis_secret")
         val type = setOf("NYS", "NAS", "AMS")
         val startBoundary = LocalTime.of(8, 59)
         val endBoundary = LocalTime.of(17, 59)
@@ -159,13 +164,15 @@ class KisStockPriceService(
                 market = PrdtTypeCd.findDayMarketCodeByMarketCode(market)
             }
 
-            val kisPriceHttpResponse: HttpResponse = httpClient.get("/uapi/overseas-price/v1/quotations/price-detail") {
+            val kisPriceHttpResponse: HttpResponse = httpClient.get("$KIS_BASE_URL/uapi/overseas-price/v1/quotations/price-detail") {
                 url {
                     parameters.append("EXCD", market)
                     parameters.append("SYMB", stock.stockCode)
                 }
 
                 header("authorization", "Bearer $token")
+                header("appkey", appKey)
+                header("appsecret", appSecret)
                 header("tr_id", PRICE_DETAIL_TR_ID)
             }
 
@@ -183,7 +190,7 @@ class KisStockPriceService(
             val delayTimeMs = MIN_INTERVAL - elapsedTimeMs
             if (delayTimeMs > 0) {
                 // 목표 간격보다 빨리 끝났다면, 남은 시간만큼 대기
-                delay(delayTimeMs)
+                delay(delayTimeMs.milliseconds)
                 logger.debug("stockApiCall -> ${delayTimeMs}ms 지연 후 다음 호출.")
             }
         }

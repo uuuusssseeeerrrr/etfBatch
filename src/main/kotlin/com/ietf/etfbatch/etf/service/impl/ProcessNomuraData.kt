@@ -3,12 +3,13 @@ package com.ietf.etfbatch.etf.service.impl
 import com.ietf.etfbatch.etf.service.interfaces.ProcessData
 import com.ietf.etfbatch.etf.util.removeCharEtfName
 import com.ietf.etfbatch.table.EtfStockListRecord
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.async
-import kotlinx.coroutines.awaitAll
-import kotlinx.coroutines.coroutineScope
+import kotlinx.coroutines.*
+import org.koin.core.annotation.Named
+import org.koin.core.annotation.Single
 import java.math.BigDecimal
 
+@Single
+@Named("nomura")
 class ProcessNomuraData : ProcessData {
     override suspend fun processData(data: Map<String, List<String>>): List<EtfStockListRecord> {
         return coroutineScope {

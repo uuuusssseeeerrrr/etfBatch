@@ -5,8 +5,6 @@ import io.ktor.client.engine.cio.*
 import io.ktor.client.plugins.*
 import io.ktor.client.plugins.contentnegotiation.*
 import io.ktor.client.plugins.logging.*
-import io.ktor.client.request.*
-import io.ktor.http.*
 import io.ktor.serialization.kotlinx.json.*
 import kotlinx.serialization.json.Json
 import org.koin.dsl.module
@@ -20,19 +18,6 @@ val restClient = module {
                     prettyPrint = true
                     ignoreUnknownKeys = true
                 })
-            }
-
-            defaultRequest {
-                url("https://openapi.koreainvestment.com:9443")
-
-                headers {
-                    append(HttpHeaders.ContentType, "application/json; charset=utf-8")
-
-                    if (!url.encodedPath.contains("/token")) {
-                        append("appkey", VaultConfig.getVaultSecret("kis_key"))
-                        append("appsecret", VaultConfig.getVaultSecret("kis_secret"))
-                    }
-                }
             }
 
             engine {
@@ -52,11 +37,10 @@ val restClient = module {
             }
 
             install(HttpTimeout) {
-                requestTimeoutMillis = 1000000  // 5분
-                connectTimeoutMillis = 600000   // 1분
-                socketTimeoutMillis = 600000    // 1분
+                requestTimeoutMillis = 100000
+                connectTimeoutMillis = 60000
+                socketTimeoutMillis = 60000
             }
         }
     }
 }
-

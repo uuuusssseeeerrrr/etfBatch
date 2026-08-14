@@ -2,6 +2,7 @@ plugins {
     alias(libs.plugins.kotlin.jvm)
     alias(libs.plugins.ktor)
     alias(libs.plugins.kotlin.plugin.serialization)
+    alias(libs.plugins.koin.compiler)
 }
 
 group = "com.ietf"
@@ -45,6 +46,7 @@ dependencies {
     implementation(libs.koin.core)
     implementation(libs.koin.ktor)
     implementation(libs.koin.logger.slf4j)
+    implementation(libs.koin.annotations)
     implementation(libs.poi.core)
     implementation(libs.poi.ooxml)
     implementation(libs.log4j.to.slf4j)
@@ -53,8 +55,10 @@ dependencies {
     implementation(libs.oci.sdk.jersey3)
     implementation(libs.juniversalchardet)
     implementation(libs.jsoup)
-
-    testImplementation(libs.ktor.server.test.host)
-    testImplementation(libs.kotlin.test)
 }
+
+koinCompiler {
+    compileSafety = false
+}
+
 

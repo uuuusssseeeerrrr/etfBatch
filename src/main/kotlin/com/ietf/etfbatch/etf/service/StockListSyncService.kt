@@ -13,15 +13,14 @@ import org.jetbrains.exposed.v1.core.isNull
 import org.jetbrains.exposed.v1.jdbc.batchInsert
 import org.jetbrains.exposed.v1.jdbc.select
 import org.jetbrains.exposed.v1.jdbc.transactions.transaction
+import org.koin.core.annotation.Single
 import kotlin.time.Clock
-import kotlin.time.ExperimentalTime
 
-
+@Single
 class StockListSyncService(
     val stockRemoveService: StockRemoveService,
     val kisStockInfoService: KisStockInfoService
 ) {
-    @OptIn(ExperimentalTime::class)
     suspend fun syncStockList() {
         val today = Clock.System.now().toLocalDateTime(TimeZone.of("Asia/Seoul"))
 

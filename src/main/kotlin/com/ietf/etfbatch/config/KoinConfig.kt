@@ -1,74 +1,20 @@
 package com.ietf.etfbatch.config
 
-import com.ietf.etfbatch.RoutingClass
-import com.ietf.etfbatch.etf.service.EtfFileHandler
-import com.ietf.etfbatch.etf.service.EtfStocksSyncService
-import com.ietf.etfbatch.etf.service.StockListSyncService
-import com.ietf.etfbatch.etf.service.impl.*
-import com.ietf.etfbatch.etf.service.interfaces.ProcessData
-import com.ietf.etfbatch.etf.service.interfaces.SyncData
-import com.ietf.etfbatch.rate.service.RateService
-import com.ietf.etfbatch.stock.service.KisStockInfoService
-import com.ietf.etfbatch.stock.service.KisStockPriceService
-import com.ietf.etfbatch.stock.service.StockRemoveService
-import com.ietf.etfbatch.token.service.KisTokenService
 import io.ktor.server.application.*
-import org.koin.core.module.dsl.singleOf
-import org.koin.core.qualifier.named
-import org.koin.dsl.module
+import org.koin.core.annotation.ComponentScan
+import org.koin.core.annotation.Module
 import org.koin.ktor.plugin.Koin
 import org.koin.logger.slf4jLogger
+import org.koin.plugin.module.dsl.*
+
+@Module
+@ComponentScan("com.ietf.etfbatch")
+class AppModule
 
 fun Application.koinConfig() {
-    val clientModule = module {
-        singleOf(::KisTokenService)
-        singleOf(::KisStockInfoService)
-        singleOf(::KisStockPriceService)
-        singleOf(::StockRemoveService)
-        singleOf(::RateService)
-        singleOf(::StockListSyncService)
-        singleOf(::EtfFileHandler)
-        singleOf(::RoutingClass)
-
-        single {
-            EtfStocksSyncService(
-                get(named("usa")),
-                get(named("japan"))
-            )
-        }
-
-        single<SyncData>(named("japan")) {
-            JapanEtfStockSyncService(
-                etfFileHandler = get(),
-                processorAmova = get(named("amova")),
-                processorAsset = get(named("asset")),
-                processorGlobalx = get(named("globalx")),
-                processorMitsubishi = get(named("mitsubishi")),
-                processorNomura = get(named("nomura")),
-                processorSimplex = get(named("simplex"))
-            )
-        }
-
-        single<SyncData>(named("usa")) {
-            UsaEtfStockSyncService(
-                processorInvesco = get(named("invesco")),
-                processorProShares = get(named("proshares"))
-            )
-        }
-
-        single<ProcessData>(named("amova")) { ProcessAmovaData() }
-        single<ProcessData>(named("asset")) { ProcessAssetData() }
-        single<ProcessData>(named("globalx")) { ProcessGlobalXData() }
-        single<ProcessData>(named("mitsubishi")) { ProcessMitsubishiData() }
-        single<ProcessData>(named("nomura")) { ProcessNomuraData() }
-        single<ProcessData>(named("simplex")) { ProcessSimplexData() }
-        single<ProcessData>(named("invesco")) { ProcessInvescoData(get()) }
-        single<ProcessData>(named("proshares")) { ProcessProSharesData() }
-    }
-
     install(Koin) {
         slf4jLogger()
         modules(restClient)
-        modules(clientModule)
+        module<AppModule>()
     }
 }

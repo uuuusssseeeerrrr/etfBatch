@@ -13,7 +13,6 @@ import org.jetbrains.exposed.v1.jdbc.batchUpsert
 import org.jetbrains.exposed.v1.jdbc.deleteWhere
 import org.jetbrains.exposed.v1.jdbc.transactions.transaction
 import kotlin.time.Clock
-import kotlin.time.ExperimentalTime
 
 interface SyncData {
     suspend fun sync()
@@ -21,7 +20,6 @@ interface SyncData {
     /**
      * 데이터베이스에 ETF 종목 리스트를 업서트하고, 15일 이전 데이터를 삭제합니다.
      */
-    @OptIn(ExperimentalTime::class)
     suspend fun upsertData (dataList: List<EtfStockListRecord>) {
         // 데이터베이스 입력
         val kstTimezone = TimeZone.of("Asia/Seoul")

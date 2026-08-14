@@ -1,11 +1,13 @@
 package com.ietf.etfbatch.etf.service
 
 import com.ietf.etfbatch.etf.service.interfaces.SyncData
-import jakarta.inject.Named
+import org.koin.core.annotation.Named
+import org.koin.core.annotation.Single
 
+@Single
 class EtfStocksSyncService(
-    @param:Named("usa") val usaEtfStockSyncService: SyncData,
-    @param:Named("japan") val japanEtfStockSyncService: SyncData,
+    @Named("usa") val usaEtfStockSyncService: SyncData,
+    @Named("japan") val japanEtfStockSyncService: SyncData,
 ) {
     suspend fun etfStockListInfo() {
         japanEtfStockSyncService.sync()

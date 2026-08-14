@@ -9,8 +9,12 @@ import kotlinx.coroutines.coroutineScope
 import org.jsoup.Jsoup
 import org.jsoup.nodes.Document
 import org.jsoup.nodes.Element
+import org.koin.core.annotation.Named
+import org.koin.core.annotation.Single
 import java.math.BigDecimal
 
+@Single
+@Named("proshares")
 class ProcessProSharesData : ProcessData {
     override suspend fun processData(data: Map<String, List<String>>): List<EtfStockListRecord> {
         return coroutineScope {

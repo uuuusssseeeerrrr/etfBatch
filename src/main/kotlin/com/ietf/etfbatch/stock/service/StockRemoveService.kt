@@ -8,10 +8,10 @@ import org.jetbrains.exposed.v1.core.notInSubQuery
 import org.jetbrains.exposed.v1.jdbc.deleteWhere
 import org.jetbrains.exposed.v1.jdbc.select
 import org.jetbrains.exposed.v1.jdbc.transactions.transaction
+import org.koin.core.annotation.Single
 import kotlin.time.Clock
-import kotlin.time.ExperimentalTime
 
-@OptIn(ExperimentalTime::class)
+@Single
 class StockRemoveService() {
     /**
      * 일주일 이상 지난 히스토리 삭제
@@ -24,7 +24,7 @@ class StockRemoveService() {
             ${targetDate.year}
             ${targetDate.month.number.toString().padStart(2, '0')}
             ${targetDate.day.toString().padStart(2, '0')}
-        """.trimIndent().replace("\n", "")
+        """.trimIndent()
 
         transaction {
             EtfPriceHistory.deleteWhere {

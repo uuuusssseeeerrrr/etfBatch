@@ -6,26 +6,27 @@ import com.ietf.etfbatch.etf.service.interfaces.ProcessData
 import com.ietf.etfbatch.etf.service.interfaces.SyncData
 import com.ietf.etfbatch.table.EtfList
 import com.ietf.etfbatch.table.EtfStockListRecord
-import jakarta.inject.Named
 import kotlinx.coroutines.*
 import org.jetbrains.exposed.v1.jdbc.selectAll
 import org.jetbrains.exposed.v1.jdbc.transactions.transaction
+import org.koin.core.annotation.Named
+import org.koin.core.annotation.Single
 import java.time.DayOfWeek
 import java.time.LocalDate
 import java.time.ZoneId
 import java.time.format.DateTimeFormatter
-import kotlin.time.ExperimentalTime
 
+@Single
+@Named("japan")
 class JapanEtfStockSyncService(
     val etfFileHandler: EtfFileHandler,
-    @param:Named("amova") private val processorAmova: ProcessData,
-    @param:Named("asset") private val processorAsset: ProcessData,
-    @param:Named("globalx") private val processorGlobalx: ProcessData,
-    @param:Named("mitsubishi") private val processorMitsubishi: ProcessData,
-    @param:Named("nomura") private val processorNomura: ProcessData,
-    @param:Named("simplex") private val processorSimplex: ProcessData
+    @Named("amova") private val processorAmova: ProcessData,
+    @Named("asset") private val processorAsset: ProcessData,
+    @Named("globalx") private val processorGlobalx: ProcessData,
+    @Named("mitsubishi") private val processorMitsubishi: ProcessData,
+    @Named("nomura") private val processorNomura: ProcessData,
+    @Named("simplex") private val processorSimplex: ProcessData
 ) : SyncData {
-    @OptIn(ExperimentalTime::class)
     override suspend fun sync() {
         val today = LocalDate.now(ZoneId.of("Asia/Seoul"))
 

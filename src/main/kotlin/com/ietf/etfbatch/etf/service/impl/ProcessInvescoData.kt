@@ -6,12 +6,13 @@ import com.ietf.etfbatch.table.EtfStockListRecord
 import io.ktor.client.*
 import io.ktor.client.call.*
 import io.ktor.client.request.*
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.async
-import kotlinx.coroutines.awaitAll
-import kotlinx.coroutines.coroutineScope
+import kotlinx.coroutines.*
+import org.koin.core.annotation.Named
+import org.koin.core.annotation.Single
 import java.math.BigDecimal
 
+@Single
+@Named("invesco")
 class ProcessInvescoData(val httpClient: HttpClient) : ProcessData {
     companion object {
         val levereageEtfList : Array<String> = arrayOf("QLD")

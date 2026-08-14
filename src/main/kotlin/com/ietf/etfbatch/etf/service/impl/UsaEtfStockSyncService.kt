@@ -4,18 +4,19 @@ import com.ietf.etfbatch.etf.service.interfaces.ProcessData
 import com.ietf.etfbatch.etf.service.interfaces.SyncData
 import com.ietf.etfbatch.table.EtfList
 import com.ietf.etfbatch.table.EtfStockListRecord
-import jakarta.inject.Named
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import org.jetbrains.exposed.v1.jdbc.selectAll
 import org.jetbrains.exposed.v1.jdbc.transactions.transaction
-import kotlin.time.ExperimentalTime
+import org.koin.core.annotation.Named
+import org.koin.core.annotation.Single
 
+@Single
+@Named("usa")
 class UsaEtfStockSyncService(
-    @param:Named("invesco") private val processorInvesco: ProcessData,
-    @param:Named("proshares") private val processorProShares: ProcessData
+    @Named("invesco") private val processorInvesco: ProcessData,
+    @Named("proshares") private val processorProShares: ProcessData
 ) : SyncData {
-    @OptIn(ExperimentalTime::class)
     override suspend fun sync() {
         val dataList = mutableListOf<EtfStockListRecord>()
         val etfList = withContext(Dispatchers.IO) {

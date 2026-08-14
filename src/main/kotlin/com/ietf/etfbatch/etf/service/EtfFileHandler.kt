@@ -5,22 +5,26 @@ import io.ktor.client.call.*
 import io.ktor.client.request.*
 import io.ktor.client.statement.*
 import io.ktor.http.*
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.async
-import kotlinx.coroutines.awaitAll
-import kotlinx.coroutines.coroutineScope
+import kotlinx.coroutines.*
 import org.apache.poi.hssf.usermodel.HSSFWorkbook
 import org.apache.poi.ss.usermodel.CellType
 import org.apache.poi.ss.usermodel.Workbook
 import org.apache.poi.xssf.usermodel.XSSFWorkbook
+import org.koin.core.annotation.Single
 import org.mozilla.universalchardet.ReaderFactory
+import org.slf4j.LoggerFactory
 import java.io.File
 import java.io.FileOutputStream
 import java.nio.charset.Charset
 import kotlin.io.path.extension
 
+@Single
 class EtfFileHandler(val client: HttpClient) {
     private val excelDir: String = System.getenv("EXCEL_DIR") ?: "/home/rocky/excel"
+
+    companion object {
+        private val logger = LoggerFactory.getLogger(EtfFileHandler::class.java)
+    }
 
     suspend fun downloadFileToExcelDir(fileUrl: String, folderName: String, fileNm: String) {
         try {
@@ -29,12 +33,16 @@ class EtfFileHandler(val client: HttpClient) {
             if (response.status.isSuccess()) {
                 val bytes = response.body<ByteArray>()
                 val file = File("${excelDir}/${folderName}/${fileNm}")
+                file.parentFile?.mkdirs()
 
-                FileOutputStream(file).use { outputStream ->
-                    outputStream.write(bytes)
+                withContext(Dispatchers.IO) {
+                    FileOutputStream(file).use { outputStream ->
+                        outputStream.write(bytes)
+                    }
                 }
             }
         } catch (e: Exception) {
+            logger.error(e.message)
             e.printStackTrace()
         }
     }

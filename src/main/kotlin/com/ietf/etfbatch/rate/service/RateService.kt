@@ -10,11 +10,11 @@ import kotlinx.datetime.TimeZone
 import kotlinx.datetime.toLocalDateTime
 import org.jetbrains.exposed.v1.jdbc.insert
 import org.jetbrains.exposed.v1.jdbc.transactions.transaction
+import org.koin.core.annotation.Single
 import kotlin.time.Clock
-import kotlin.time.ExperimentalTime
 
+@Single
 class RateService(val client: HttpClient) {
-    @OptIn(ExperimentalTime::class)
     suspend fun getRate() {
         val usdRate = callApi("USD", "KRW")
         val jpyRate = callApi("JPY", "KRW")

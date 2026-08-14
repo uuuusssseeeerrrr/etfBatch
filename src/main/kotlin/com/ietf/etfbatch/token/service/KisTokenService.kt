@@ -1,21 +1,21 @@
 package com.ietf.etfbatch.token.service
 
-import com.ietf.etfbatch.config.VaultConfig
 import com.ietf.etfbatch.table.Token
-import com.ietf.etfbatch.token.dto.KisTokenRequest
 import com.ietf.etfbatch.token.dto.KisTokenResponse
 import io.ktor.client.*
 import io.ktor.client.call.*
 import io.ktor.client.request.*
 import io.ktor.client.statement.*
-import kotlinx.serialization.json.Json
+import io.ktor.http.*
 import org.jetbrains.exposed.v1.core.eq
 import org.jetbrains.exposed.v1.jdbc.insert
 import org.jetbrains.exposed.v1.jdbc.selectAll
 import org.jetbrains.exposed.v1.jdbc.transactions.transaction
+import org.koin.core.annotation.Single
 import java.time.LocalDateTime
 import java.time.format.DateTimeFormatter
 
+@Single
 class KisTokenService(val httpClient: HttpClient) {
     suspend fun getKisAccessToken(): String {
         val today = LocalDateTime.now().format(DateTimeFormatter.ofPattern("yyyyMMdd"))
@@ -47,18 +47,8 @@ class KisTokenService(val httpClient: HttpClient) {
     }
 
     private suspend fun tokenApiCall(): KisTokenResponse {
-        val response: HttpResponse = httpClient.post("/oauth2/tokenP") {
-            setBody(
-                KisTokenRequest(
-                    appKey = VaultConfig.getVaultSecret("kis_key"),
-                    appSecret = VaultConfig.getVaultSecret("kis_secret")
-                )
-            )
-
-            Json {
-                encodeDefaults = true
-                prettyPrint = true
-            }
+        val response: HttpResponse = httpClient.post("https://openapi.koreainvestment.com:9443/oauth2/tokenP") {
+            header(HttpHeaders.ContentType, "application/json; charset=utf-8")
         }
 
         return response.body<KisTokenResponse>()
