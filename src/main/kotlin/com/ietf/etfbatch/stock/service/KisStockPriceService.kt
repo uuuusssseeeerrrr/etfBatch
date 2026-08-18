@@ -101,7 +101,6 @@ class KisStockPriceService(
         val targetStockList = transaction {
             StockList.select(StockList.market, StockList.stockCode)
                 .where { StockList.market eq market }
-                .limit(1)
                 .map { row -> StockObject(row[StockList.market], row[StockList.stockCode]) }
                 .toList()
         }
