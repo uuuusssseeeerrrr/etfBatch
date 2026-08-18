@@ -10,7 +10,10 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import kotlinx.datetime.TimeZone
 import kotlinx.datetime.toLocalDateTime
+import org.jetbrains.exposed.v1.core.and
+import org.jetbrains.exposed.v1.core.eq
 import org.jetbrains.exposed.v1.jdbc.batchUpsert
+import org.jetbrains.exposed.v1.jdbc.select
 import org.jetbrains.exposed.v1.jdbc.transactions.transaction
 import org.koin.core.annotation.Single
 import org.slf4j.LoggerFactory
@@ -121,5 +124,25 @@ class HolidayService(private val httpClient: HttpClient) {
         }
 
         logger.info("휴일 데이터 DB 저장(Upsert) 완료 - 총 {}건", targetHolidays.size)
+    }
+
+    /**
+     * market 파라미터에 해당하는 country 코드로 오늘 날짜가 holiday 테이블에 존재하는지 확인합니다.
+     * TSE → JP, 그 외(NYS/NAS/AMS 등) → US
+     *
+     * @param market 시장 코드 (e.g. "TSE", "NYS", "NAS", "AMS")
+     * @return 오늘이 해당 country의 휴일이면 true, 아니면 false
+     */
+    fun isTodayHoliday(market: String): Boolean {
+        val country = if (market == "TSE") "JP" else "US"
+        val today = LocalDate.now(ZoneId.of("Asia/Tokyo")).toString() // "yyyy-MM-dd"
+
+        val count = transaction {
+            Holiday.select(Holiday.holidayDate)
+                .where { (Holiday.country eq country) and (Holiday.holidayDate eq today) }
+                .count()
+        }
+
+        return count > 0
     }
 }
