@@ -38,14 +38,18 @@ class KisStockPriceService(
     }
 
     /**
+     * TSE(도쿄) 정규장 시간(한국시간 9~16시) 여부를 반환합니다.
+     */
+    fun isTseTradingHours(): Boolean {
+        val now = Clock.System.now().toLocalDateTime(TimeZone.of("Asia/Seoul"))
+        return now.hour in 9..16
+    }
+
+    /**
      * ETF 가격정보 가져오기
      */
     suspend fun getEtfPrice(market: String) {
         val now = Clock.System.now().toLocalDateTime(TimeZone.of("Asia/Seoul"))
-
-        if (market == "TSE" && (now.hour !in 9..16)) {
-            return
-        }
 
         val targetEtfList = transaction {
             EtfList.select(EtfList.market, EtfList.stockCode)
@@ -93,10 +97,6 @@ class KisStockPriceService(
      */
     suspend fun getStockPrice(market: String) {
         val now = Clock.System.now().toLocalDateTime(TimeZone.of("Asia/Seoul"))
-
-        if (market == "TSE" && (now.hour !in 9..16)) {
-            return
-        }
 
         val targetStockList = transaction {
             StockList.select(StockList.market, StockList.stockCode)

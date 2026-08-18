@@ -59,6 +59,10 @@ fun RoutingClass.configureRouting(
                         call.respondText("오늘은 휴일이므로 etf 요청을 건너뜁니다. (market: $market)")
                         return@post
                     }
+                    if (market == "TSE" && !kisStockPriceService.isTseTradingHours()) {
+                        call.respondText("TSE 정규장 시간(09~16시)이 아니므로 etf 요청을 건너뜁니다. (market: $market)")
+                        return@post
+                    }
                     kisStockPriceService.getEtfPrice(market)
                     call.respondText("etf 요청 처리됨")
                 } catch (e: Exception) {
@@ -84,6 +88,10 @@ fun RoutingClass.configureRouting(
                 try {
                     if (holidayService.isTodayHoliday(market)) {
                         call.respondText("오늘은 휴일이므로 stock 요청을 건너뜁니다. (market: $market)")
+                        return@post
+                    }
+                    if (market == "TSE" && !kisStockPriceService.isTseTradingHours()) {
+                        call.respondText("TSE 정규장 시간(09~16시)이 아니므로 stock 요청을 건너뜁니다. (market: $market)")
                         return@post
                     }
                     kisStockPriceService.getStockPrice(market)
