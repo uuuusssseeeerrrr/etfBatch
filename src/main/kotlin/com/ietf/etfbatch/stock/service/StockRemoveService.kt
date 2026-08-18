@@ -35,6 +35,10 @@ class StockRemoveService() {
                 StockPriceHistory.regDate.lessEq(targetDate)
             }
 
+            PriceApiCallHistories.deleteWhere {
+                PriceApiCallHistories.regDate.lessEq(targetDate)
+            }
+
             Token.deleteWhere {
                 Token.regDate.lessEq(targetDateFormat)
             }
@@ -51,7 +55,7 @@ class StockRemoveService() {
     }
 
     /**
-     * 사용하지 않는 종목 정보 삭제
+     * 일치하지 않는 종목 정보 삭제
      */
     fun removeUnCorrectedStockInfo() {
         StockList.deleteWhere {

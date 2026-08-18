@@ -32,7 +32,7 @@ class KisStockPriceService(
 ) {
     companion object {
         const val PRICE_DETAIL_TR_ID = "HHDFS76200200"
-        const val MIN_INTERVAL = 112L
+        const val MIN_INTERVAL = 60L
         private const val KIS_BASE_URL = "https://openapi.koreainvestment.com:9443"
         private val logger = LoggerFactory.getLogger(KisStockPriceService::class.java)
     }
@@ -101,6 +101,7 @@ class KisStockPriceService(
         val targetStockList = transaction {
             StockList.select(StockList.market, StockList.stockCode)
                 .where { StockList.market eq market }
+                .limit(1)
                 .map { row -> StockObject(row[StockList.market], row[StockList.stockCode]) }
                 .toList()
         }
