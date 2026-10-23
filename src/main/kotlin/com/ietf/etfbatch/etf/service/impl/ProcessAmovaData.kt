@@ -19,13 +19,19 @@ class ProcessAmovaData : ProcessData {
                     value.mapNotNull { data ->
                         val splitData = data.split(",")
 
-                        if (splitData[0] in type) {
-                            val value = splitData[9].replace("%", "")
+                        val value = splitData.getOrNull(9)?.replace("%", "")?.toBigDecimalOrNull()
+                        val percent = if (value != null && value > BigDecimal(100)) {
+                            splitData.getOrNull(10)?.toBigDecimalOrNull()
+                        } else {
+                            value
+                        }
+
+                        if (splitData[0] in type && percent != null) {
                             EtfStockListRecord(
                                 "TSE",
                                 key,
                                 splitData[1],
-                                BigDecimal(if (value.toDouble() > 100) splitData[10] else value)
+                                percent
                             )
                         } else {
                             null

@@ -18,6 +18,7 @@ import kotlinx.coroutines.withContext
 import kotlinx.datetime.TimeZone
 import kotlinx.datetime.toLocalDateTime
 import org.jetbrains.exposed.v1.core.*
+import org.jetbrains.exposed.v1.jdbc.deleteWhere
 import org.jetbrains.exposed.v1.jdbc.select
 import org.jetbrains.exposed.v1.jdbc.transactions.transaction
 import org.jetbrains.exposed.v1.jdbc.update
@@ -95,10 +96,40 @@ class KisStockInfoService(
                 withContext(Dispatchers.IO) {
                     transaction {
                         apiResultList.forEach { apiResult ->
+                            val marketChanged = apiResult.resolvedMarket != apiResult.market
+
+                            if (marketChanged) {
+                                val alreadyExists = StockList.select(StockList.stockCode)
+                                    .where {
+                                        StockList.market.eq(apiResult.resolvedMarket) and
+                                                StockList.stockCode.eq(apiResult.stockCode)
+                                    }
+                                    .any()
+
+                                // 변경될 시장으로 이미 등록된 종목이 있으면 기존 행만 삭제 (PK 중복 방지)
+                                if (alreadyExists) {
+                                    StockList.deleteWhere {
+                                        StockList.market.eq(apiResult.market) and
+                                                StockList.stockCode.eq(apiResult.stockCode)
+                                    }
+                                    logger.info(
+                                        "stock_list 중복 행 삭제 - stockCode: {}, market: {} ({}로 이미 등록됨)",
+                                        apiResult.stockCode, apiResult.market, apiResult.resolvedMarket
+                                    )
+                                    return@forEach
+                                }
+
+                                logger.info(
+                                    "stock_list market 변경 - stockCode: {}, market: {} -> {}",
+                                    apiResult.stockCode, apiResult.market, apiResult.resolvedMarket
+                                )
+                            }
+
                             StockList.update({
                                 StockList.market.eq(apiResult.market) and
                                         StockList.stockCode.eq(apiResult.stockCode)
                             }) {
+                                it[StockList.market] = apiResult.resolvedMarket
                                 it[StockList.trCrcyCd] = apiResult.trCrcyCd
                                 it[StockList.buyUnitQty] = apiResult.buyUnitQty
                                 it[StockList.stdPdno] = apiResult.stdPdno
@@ -125,24 +156,23 @@ class KisStockInfoService(
 
         for (stock in targetList) {
             val startTime = System.currentTimeMillis()
-            val kisApiResult = httpClient.get("$KIS_BASE_URL/uapi/overseas-price/v1/quotations/search-info") {
-                header("authorization", "Bearer $token")
-                header("appkey", appKey)
-                header("appsecret", appSecret)
-                header("tr_id", SEARCH_INFO_TR_ID)
-                header("custtype", "P")
+            val prdtTypeCd = PrdtTypeCd.findInfoCodeByMarketCode(stock.market)
+            var resolvedMarket = stock.market
+            var kisApiResult = requestInfo(token, appKey, appSecret, prdtTypeCd, stock.stockCode)
 
-                url {
-                    parameters.append("PRDT_TYPE_CD", PrdtTypeCd.findInfoCodeByMarketCode(stock.market).toString())
-                    parameters.append("PDNO", stock.stockCode)
-                }
-            }.body<KisInfoResponse>()
+            // 뉴욕(513)으로 조회되지 않으면 나스닥(512)으로 재조회
+            if (kisApiResult.rtCd == "7" && prdtTypeCd == PrdtTypeCd.USA_NEWYORK.infoCode) {
+                delay(MIN_INTERVAL.milliseconds)
+                kisApiResult = requestInfo(token, appKey, appSecret, PrdtTypeCd.USA_NASDAQ.infoCode, stock.stockCode)
+                resolvedMarket = PrdtTypeCd.USA_NASDAQ.marketCode
+            }
 
             if (kisApiResult.rtCd == "0" &&
                 kisApiResult.output != null
             ) {
                 kisApiResult.output.market = stock.market
                 kisApiResult.output.stockCode = stock.stockCode
+                kisApiResult.output.resolvedMarket = resolvedMarket
                 apiResultList.add(kisApiResult.output)
             }
 
@@ -156,5 +186,26 @@ class KisStockInfoService(
         }
 
         return apiResultList
+    }
+
+    private suspend fun requestInfo(
+        token: String,
+        appKey: String,
+        appSecret: String,
+        prdtTypeCd: Int,
+        stockCode: String
+    ): KisInfoResponse {
+        return httpClient.get("$KIS_BASE_URL/uapi/overseas-price/v1/quotations/search-info") {
+            header("authorization", "Bearer $token")
+            header("appkey", appKey)
+            header("appsecret", appSecret)
+            header("tr_id", SEARCH_INFO_TR_ID)
+            header("custtype", "P")
+
+            url {
+                parameters.append("PRDT_TYPE_CD", prdtTypeCd.toString())
+                parameters.append("PDNO", stockCode)
+            }
+        }.body<KisInfoResponse>()
     }
 }

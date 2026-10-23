@@ -24,4 +24,8 @@ data class KisInfoOutput(
 
     @Transient
     lateinit var stockCode: String
+
+    // 실제 조회에 성공한 시장코드 (재조회로 시장이 바뀐 경우 market과 다름)
+    @Transient
+    lateinit var resolvedMarket: String
 }

@@ -11,6 +11,6 @@ data class InvescoData(
 
 @Serializable
 data class InvescoHoldings(
-    @SerialName("ticker") val ticker: String?,
-    @SerialName("percentageOfTotalNetAssets") val percentageOfTotalNetAssets: Double
+    @SerialName("ticker") val ticker: String? = null,
+    @SerialName("percentageOfTotalNetAssets") val percentageOfTotalNetAssets: Double? = null
 )

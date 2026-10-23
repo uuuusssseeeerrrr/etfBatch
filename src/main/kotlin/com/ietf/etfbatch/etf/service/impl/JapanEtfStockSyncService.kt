@@ -4,13 +4,16 @@ import com.ietf.etfbatch.etf.dto.EtfPublisher
 import com.ietf.etfbatch.etf.service.EtfFileHandler
 import com.ietf.etfbatch.etf.service.interfaces.ProcessData
 import com.ietf.etfbatch.etf.service.interfaces.SyncData
+import com.ietf.etfbatch.etf.util.throwIfFailed
 import com.ietf.etfbatch.table.EtfList
 import com.ietf.etfbatch.table.EtfStockListRecord
 import kotlinx.coroutines.*
+import org.jetbrains.exposed.v1.core.ResultRow
 import org.jetbrains.exposed.v1.jdbc.selectAll
 import org.jetbrains.exposed.v1.jdbc.transactions.transaction
 import org.koin.core.annotation.Named
 import org.koin.core.annotation.Single
+import org.slf4j.LoggerFactory
 import java.time.DayOfWeek
 import java.time.LocalDate
 import java.time.ZoneId
@@ -27,6 +30,10 @@ class JapanEtfStockSyncService(
     @Named("nomura") private val processorNomura: ProcessData,
     @Named("simplex") private val processorSimplex: ProcessData
 ) : SyncData {
+    companion object {
+        private val logger = LoggerFactory.getLogger(JapanEtfStockSyncService::class.java)
+    }
+
     override suspend fun sync() {
         val today = LocalDate.now(ZoneId.of("Asia/Seoul"))
 
@@ -36,6 +43,18 @@ class JapanEtfStockSyncService(
             }
         }
 
+        // 이전 실행에서 남은 파일이 재사용되지 않도록 먼저 정리
+        removeAllDirectories()
+
+        try {
+            syncFiles(today, etfList)
+        } finally {
+            //파일 삭제
+//            removeAllDirectories()
+        }
+    }
+
+    private suspend fun syncFiles(today: LocalDate, etfList: List<ResultRow>) {
         coroutineScope {
             //파일 다운로드
             val deferredDownloads: List<Deferred<Unit>> = etfList
@@ -114,43 +133,40 @@ class JapanEtfStockSyncService(
                 }
 
             deferredDownloads.awaitAll()
-
-            val dataList = mutableListOf<EtfStockListRecord>()
-
-            // 엑셀파일 읽기
-            val nomuraData =
-                etfFileHandler.readDirectoryToStringList(EtfPublisher.NOMURA.folderName, EtfPublisher.NOMURA.skip)
-            val globalData =
-                etfFileHandler.readDirectoryToStringList(EtfPublisher.GLOBALX.folderName, EtfPublisher.GLOBALX.skip)
-            val assetData =
-                etfFileHandler.readDirectoryToStringList(EtfPublisher.ASSET.folderName, EtfPublisher.ASSET.skip)
-            val mitsuData = etfFileHandler.readDirectoryToStringList(
-                EtfPublisher.MITSUBISHI.folderName,
-                EtfPublisher.MITSUBISHI.skip
-            )
-            val amovaData =
-                etfFileHandler.readDirectoryToStringList(EtfPublisher.AMOVA.folderName, EtfPublisher.AMOVA.skip)
-            val simplexData =
-                etfFileHandler.readDirectoryToStringList(EtfPublisher.SIMPLEX.folderName, EtfPublisher.SIMPLEX.skip)
-
-            // 데이터 가공
-            dataList.addAll(processorNomura.processData(nomuraData))
-            dataList.addAll(processorGlobalx.processData(globalData))
-            dataList.addAll(processorAsset.processData(assetData))
-            dataList.addAll(processorMitsubishi.processData(mitsuData))
-            dataList.addAll(processorAmova.processData(amovaData))
-            dataList.addAll(processorSimplex.processData(simplexData))
-
-            // 데이터베이스 입력
-            upsertData(dataList)
-
-            //파일 삭제
-            etfFileHandler.removeDirectory(EtfPublisher.NOMURA.folderName)
-            etfFileHandler.removeDirectory(EtfPublisher.GLOBALX.folderName)
-            etfFileHandler.removeDirectory(EtfPublisher.ASSET.folderName)
-            etfFileHandler.removeDirectory(EtfPublisher.MITSUBISHI.folderName)
-            etfFileHandler.removeDirectory(EtfPublisher.AMOVA.folderName)
-            etfFileHandler.removeDirectory(EtfPublisher.SIMPLEX.folderName)
         }
+
+        val processors = linkedMapOf(
+            EtfPublisher.NOMURA to processorNomura,
+            EtfPublisher.GLOBALX to processorGlobalx,
+            EtfPublisher.ASSET to processorAsset,
+            EtfPublisher.MITSUBISHI to processorMitsubishi,
+            EtfPublisher.AMOVA to processorAmova,
+            EtfPublisher.SIMPLEX to processorSimplex
+        )
+
+        val dataList = mutableListOf<EtfStockListRecord>()
+        val failures = mutableListOf<Exception>()
+
+        // 엑셀파일 읽기 및 데이터 가공 (운용사별로 실패를 격리)
+        for ((publisher, processor) in processors) {
+            try {
+                val fileData = etfFileHandler.readDirectoryToStringList(publisher.folderName, publisher.skip)
+                dataList.addAll(processor.processData(fileData))
+            } catch (e: CancellationException) {
+                throw e
+            } catch (e: Exception) {
+                logger.error("${publisher.name} 비중정보 가공 중 오류 발생", e)
+                failures.add(e)
+            }
+        }
+
+        // 데이터베이스 입력
+        upsertData(dataList)
+
+        throwIfFailed(failures)
+    }
+
+    private fun removeAllDirectories() {
+        EtfPublisher.entries.forEach { etfFileHandler.removeDirectory(it.folderName) }
     }
 }

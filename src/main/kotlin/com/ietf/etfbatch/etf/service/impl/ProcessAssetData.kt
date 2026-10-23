@@ -19,12 +19,14 @@ class ProcessAssetData : ProcessData {
                     value.mapNotNull { data ->
                         val splitData = data.split(",")
 
-                        if (splitData[0] in breakType) {
+                        val percent = splitData.getOrNull(9)?.replace("%", "")?.toBigDecimalOrNull()
+
+                        if (splitData[0] in breakType && percent != null) {
                             EtfStockListRecord(
                                 "TSE",
                                 key,
                                 splitData[1],
-                                BigDecimal(splitData[9].replace("%", ""))
+                                percent
                                     .divide(BigDecimal(100))
                                     .multiply(BigDecimal(10000))
                                     .divide(BigDecimal(10000)),

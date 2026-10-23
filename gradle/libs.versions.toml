@@ -1,10 +1,10 @@
 [versions]
-exposed = "1.4.0"
-kotlin = "2.4.10"
-ktor = "3.5.2"
-logback = "1.6.1"
+exposed = "1.6.0"
+kotlin = "2.4.21"
+ktor = "3.6.0"
+logback = "1.6.5"
 koin-bom = "4.2.2"
-koin-plugin = "1.1.0"
+koin-plugin = "1.2.1"
 poi = "5.5.1"
 
 [libraries]
@@ -28,7 +28,7 @@ exposed-kotlin-datetime = { module = "org.jetbrains.exposed:exposed-kotlin-datet
 hikari = { module = "com.zaxxer:HikariCP", version = "7.1.0" }
 
 kotlin-datetime = { module = "org.jetbrains.kotlinx:kotlinx-datetime", version = "0.8.0" }
-mariadb-jdbc-client = { module = "org.mariadb.jdbc:mariadb-java-client", version = "3.5.10" }
+mariadb-jdbc-client = { module = "org.mariadb.jdbc:mariadb-java-client", version = "4.0.0" }
 
 koin-bom = { module = "io.insert-koin:koin-bom", version.ref = "koin-bom" }
 koin-core = { module = "io.insert-koin:koin-core" }
@@ -41,12 +41,12 @@ poi-ooxml = { module = "org.apache.poi:poi-ooxml", version.ref = "poi" }
 
 log4j-to-slf4j = { module = "org.apache.logging.log4j:log4j-to-slf4j", version = "2.26.1" }
 
-oci-sdk-bom = { module = "com.oracle.oci.sdk:oci-java-sdk-bom", version = "3.94.1" }
+oci-sdk-bom = { module = "com.oracle.oci.sdk:oci-java-sdk-bom", version = "3.97.2" }
 oci-sdk-secrets = { module = "com.oracle.oci.sdk:oci-java-sdk-secrets" }
 oci-sdk-jersey3 = { module = "com.oracle.oci.sdk:oci-java-sdk-common-httpclient-jersey3" }
 
-juniversalchardet = { module = "com.github.albfernandez:juniversalchardet", version = "2.5.0" }
-jsoup = { module = "org.jsoup:jsoup", version = "1.23.1" }
+juniversalchardet = { module = "com.github.albfernandez:juniversalchardet", version = "2.5.1" }
+jsoup = { module = "org.jsoup:jsoup", version = "1.23.2" }
 
 [plugins]
 kotlin-jvm = { id = "org.jetbrains.kotlin.jvm", version.ref = "kotlin" }

@@ -7,7 +7,6 @@ import com.ietf.etfbatch.table.StockList
 import kotlinx.datetime.TimeZone
 import kotlinx.datetime.toLocalDateTime
 import org.jetbrains.exposed.v1.core.JoinType
-import org.jetbrains.exposed.v1.core.and
 import org.jetbrains.exposed.v1.core.eq
 import org.jetbrains.exposed.v1.core.isNull
 import org.jetbrains.exposed.v1.jdbc.batchInsert
@@ -29,9 +28,9 @@ class StockListSyncService(
                 .join(
                     StockList,
                     JoinType.LEFT,
+                    // KIS 재조회로 stock_list의 market이 바뀔 수 있어 종목코드로만 비교
                     additionalConstraint = {
-                        (EtfStockList.market eq StockList.market) and
-                                (EtfStockList.stockCode eq StockList.stockCode)
+                        EtfStockList.stockCode eq StockList.stockCode
                     }
                 )
                 .select(EtfStockList.market, EtfStockList.stockCode)

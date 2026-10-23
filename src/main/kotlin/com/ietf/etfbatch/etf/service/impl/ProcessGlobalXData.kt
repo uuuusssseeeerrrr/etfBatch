@@ -13,31 +13,36 @@ import java.math.RoundingMode
 class ProcessGlobalXData : ProcessData {
     override suspend fun processData(data: Map<String, List<String>>): List<EtfStockListRecord> {
         return coroutineScope {
-            // 1. 총 구매액 합을 구함
-            val totalResult = data.map { (_, value) ->
-                async(Dispatchers.Default) {
-                    value.map { data ->
-                        val splitData = data.split(",")
-                        splitData[5].toBigDecimal().multiply(splitData[6].toBigDecimal())
-                    }.fold(BigDecimal(0)) { acc, bigDecimal -> acc.add(bigDecimal) }
-                }
-            }
-
-            val totalAmount = totalResult.awaitAll().fold(BigDecimal(0)) { acc, bigDecimal -> acc.add(bigDecimal) }
-
-            // 2. 구매액 / 총합으로 비중 구하기
             val deferedResult = data.map { (key, value) ->
                 async(Dispatchers.Default) {
-                    value.mapNotNull { data ->
+                    // 1. 종목코드, 구매액 추출
+                    val rows = value.mapNotNull { data ->
                         val splitData = data.split(",")
+                        val sharesAmount = splitData.getOrNull(5)?.toBigDecimalOrNull()
+                        val price = splitData.getOrNull(6)?.toBigDecimalOrNull()
 
-                        if (splitData.size > 5 && !splitData[0].isBlank()) {
+                        if (price != null && sharesAmount != null) {
+                            splitData[0] to price.multiply(sharesAmount)
+                        } else {
+                            null
+                        }
+                    }
+
+                    // 2. ETF별 총 구매액 합을 구함
+                    val totalAmount = rows.fold(BigDecimal(0)) { acc, (_, amount) -> acc.add(amount) }
+
+                    if (totalAmount.signum() == 0) {
+                        return@async emptyList()
+                    }
+
+                    // 3. 구매액 / 총합으로 비중 구하기
+                    rows.mapNotNull { (stockCode, amount) ->
+                        if (stockCode.isNotBlank()) {
                             EtfStockListRecord(
                                 "TSE",
                                 key,
-                                splitData[0],
-                                (splitData[5].toBigDecimal().multiply(splitData[6].toBigDecimal()))
-                                    .divide(totalAmount, 8, RoundingMode.HALF_UP)
+                                stockCode,
+                                amount.divide(totalAmount, 8, RoundingMode.HALF_UP)
                             )
                         } else {
                             null

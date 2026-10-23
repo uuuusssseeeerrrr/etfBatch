@@ -40,10 +40,13 @@ class EtfFileHandler(val client: HttpClient) {
                         outputStream.write(bytes)
                     }
                 }
+            } else {
+                logger.warn("파일 다운로드 실패 [{}] {}", response.status, fileUrl)
             }
+        } catch (e: CancellationException) {
+            throw e
         } catch (e: Exception) {
-            logger.error(e.message)
-            e.printStackTrace()
+            logger.error("파일 다운로드 중 오류 발생: $fileUrl", e)
         }
     }
 

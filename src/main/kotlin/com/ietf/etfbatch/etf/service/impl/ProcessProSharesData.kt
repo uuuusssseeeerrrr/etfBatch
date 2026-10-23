@@ -37,22 +37,22 @@ class ProcessProSharesData : ProcessData {
 
     private fun scrapData(etfStockCode: String, url: String): List<EtfStockListRecord> {
         val resultList = mutableListOf<EtfStockListRecord>()
-        val doc: Document = Jsoup.connect(url).timeout(10 * 1000).post()
+        val doc: Document = Jsoup.connect(url).timeout(10 * 1000).get()
         val body: Element = doc.body()
 
         body.select("#holdings tbody tr").map { itemElement ->
             val ticker = itemElement.select("td").eq(1).text()
+            val percent = itemElement.select("td")
+                .eq(0).text().replace("%", "")
+                .toBigDecimalOrNull()
 
-            if (ticker != "" && ticker != "--") {
+            if (ticker != "" && ticker != "--" && percent != null) {
                 resultList.add(
                     EtfStockListRecord(
                         "NYS",
                         etfStockCode = etfStockCode,
                         stockCode = ticker,
-                        etfPercent = itemElement.select("td")
-                            .eq(0).text().replace("%", "")
-                            .toBigDecimal()
-                            .divide(BigDecimal(100))
+                        etfPercent = percent.divide(BigDecimal(100))
                     )
                 )
             }

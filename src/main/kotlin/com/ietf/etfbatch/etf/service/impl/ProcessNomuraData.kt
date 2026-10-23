@@ -6,7 +6,6 @@ import com.ietf.etfbatch.table.EtfStockListRecord
 import kotlinx.coroutines.*
 import org.koin.core.annotation.Named
 import org.koin.core.annotation.Single
-import java.math.BigDecimal
 
 @Single
 @Named("nomura")
@@ -18,12 +17,14 @@ class ProcessNomuraData : ProcessData {
                     value.mapNotNull { mapData ->
                         val splitData = removeCharEtfName(mapData).split(",")
 
-                        if (splitData.size > 7 && splitData[1][0].isDigit()) {
+                        val percent = splitData.getOrNull(7)?.toBigDecimalOrNull()
+
+                        if (splitData.size > 7 && splitData[1].firstOrNull()?.isDigit() == true && percent != null) {
                             EtfStockListRecord(
                                 "TSE",
                                 key,
                                 if (splitData[1].length == 5) splitData[1].replace("R", "") else splitData[1],
-                                BigDecimal(splitData[6])
+                                percent
                             )
                         } else {
                             null

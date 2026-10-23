@@ -6,6 +6,7 @@ import com.ietf.etfbatch.table.EtfStockListRecord
 import io.ktor.client.*
 import io.ktor.client.call.*
 import io.ktor.client.request.*
+import io.ktor.http.*
 import kotlinx.coroutines.*
 import org.koin.core.annotation.Named
 import org.koin.core.annotation.Single
@@ -21,7 +22,7 @@ class ProcessInvescoData(val httpClient: HttpClient) : ProcessData {
     override suspend fun processData(data: Map<String, List<String>>): List<EtfStockListRecord> {
         return coroutineScope {
             data.mapNotNull { (key, value) ->
-                if (!key.isEmpty() && !value.isEmpty() && value[0] != "" && key !in levereageEtfList) {
+                if (!key.isEmpty() && !value.isEmpty() && value[0].length >= 11 && key !in levereageEtfList) {
                     async(Dispatchers.IO) {
                         getData(key, value[0])
                     }
@@ -33,14 +34,20 @@ class ProcessInvescoData(val httpClient: HttpClient) : ProcessData {
     }
 
     private suspend fun getData(etfStockCode: String, isin: String): List<EtfStockListRecord> {
-        val invescoDataList = httpClient.get(
+        val response = httpClient.get(
             "https://dng-api.invesco.com/cache/v1/accounts/en_US/shareclasses/" +
                     isin.substring(2..10) +
                     "/holdings/fund?idType=cusip&productType=ETF"
-        ).body<InvescoData>().dataList
+        )
+
+        if (!response.status.isSuccess()) {
+            throw IllegalStateException("Invesco 비중정보 조회 실패 [${response.status}] $etfStockCode")
+        }
+
+        val invescoDataList = response.body<InvescoData>().dataList
 
         return invescoDataList.mapNotNull { data ->
-            if (!data.ticker.isNullOrEmpty()) {
+            if (!data.ticker.isNullOrEmpty() && data.percentageOfTotalNetAssets != null) {
                 EtfStockListRecord(
                     "NAS",
                     etfStockCode,

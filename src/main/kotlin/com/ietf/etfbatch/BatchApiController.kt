@@ -12,7 +12,10 @@ import io.ktor.server.application.*
 import io.ktor.server.auth.*
 import io.ktor.server.response.*
 import io.ktor.server.routing.*
+import kotlinx.coroutines.CancellationException
+import kotlinx.coroutines.launch
 import org.koin.core.annotation.Single
+import java.util.concurrent.atomic.AtomicBoolean
 
 @Single
 data class RoutingClass(
@@ -29,6 +32,8 @@ fun RoutingClass.configureRouting(
     app: Application
 ) {
     val logger = app.environment.log
+    val etfStocksSyncRunning = AtomicBoolean(false)
+    val stockListSyncRunning = AtomicBoolean(false)
 
     /**
      * 나중에 코드가 길어지면 분리하기
@@ -157,32 +162,60 @@ fun RoutingClass.configureRouting(
              * ETF 비중정보 동기화 API
              */
             post("/etf-stocks/sync") {
-                try {
-                    etfStocksSyncService.etfStockListInfo()
-                    call.respondText("ETF 비중정보 입력완료")
-                } catch (e: Exception) {
-                    logger.error("ETF 비중정보 동기화 중 오류 발생", e)
+                // 처리 시간이 서버 읽기 타임아웃을 넘길 수 있어 즉시 응답하고 백그라운드에서 실행
+                if (!etfStocksSyncRunning.compareAndSet(false, true)) {
                     call.respondText(
-                        text = "ETF 비중정보 입력중 오류발생",
-                        status = HttpStatusCode.InternalServerError
+                        text = "ETF 비중정보 동기화가 이미 실행 중입니다.",
+                        status = HttpStatusCode.Conflict
                     )
+                    return@post
                 }
+
+                app.launch {
+                    try {
+                        logger.info("ETF 비중정보 동기화 시작")
+                        etfStocksSyncService.etfStockListInfo()
+                        logger.info("ETF 비중정보 동기화 완료")
+                    } catch (e: CancellationException) {
+                        throw e
+                    } catch (e: Exception) {
+                        logger.error("ETF 비중정보 동기화 중 오류 발생", e)
+                    } finally {
+                        etfStocksSyncRunning.set(false)
+                    }
+                }
+
+                call.respondText("ETF 비중정보 동기화 요청 접수", status = HttpStatusCode.Accepted)
             }
 
             /**
              * 주식목록 동기화 API
              */
             post("/stock-list/sync") {
-                try {
-                    stockListSyncService.syncStockList()
-                    call.respondText("주식목록 동기화 완료")
-                } catch (e: Exception) {
-                    logger.error("주식목록 동기화 중 오류 발생", e)
+                // 처리 시간이 서버 읽기 타임아웃을 넘길 수 있어 즉시 응답하고 백그라운드에서 실행
+                if (!stockListSyncRunning.compareAndSet(false, true)) {
                     call.respondText(
-                        text = "주식목록 동기화중 오류발생",
-                        status = HttpStatusCode.InternalServerError
+                        text = "주식목록 동기화가 이미 실행 중입니다.",
+                        status = HttpStatusCode.Conflict
                     )
+                    return@post
                 }
+
+                app.launch {
+                    try {
+                        logger.info("주식목록 동기화 시작")
+                        stockListSyncService.syncStockList()
+                        logger.info("주식목록 동기화 완료")
+                    } catch (e: CancellationException) {
+                        throw e
+                    } catch (e: Exception) {
+                        logger.error("주식목록 동기화 중 오류 발생", e)
+                    } finally {
+                        stockListSyncRunning.set(false)
+                    }
+                }
+
+                call.respondText("주식목록 동기화 요청 접수", status = HttpStatusCode.Accepted)
             }
 
             /**

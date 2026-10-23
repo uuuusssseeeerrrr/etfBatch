@@ -23,18 +23,18 @@ class ProcessMitsubishiData : ProcessData {
 
                             val splitData = removeCharEtfName(data).split(",")
 
-                            if (!splitData[1].startsWith("T")
-                                && splitData.size > 6
+                            if (splitData.size > 6
+                                && !splitData[1].startsWith("T")
                             ) {
-                                val value = splitData[6].replace("%", "")
+                                val value = splitData[6].replace("%", "").toBigDecimalOrNull()
 
-                                if (value.toFloat() > 0) {
+                                if (value != null && value.signum() > 0) {
                                     add(
                                         EtfStockListRecord(
                                             "TSE",
                                             key,
                                             splitData[1],
-                                            BigDecimal(value)
+                                            value
                                                 .divide(BigDecimal(100))
                                                 .multiply(BigDecimal(10000))
                                                 .divide(BigDecimal(10000))
