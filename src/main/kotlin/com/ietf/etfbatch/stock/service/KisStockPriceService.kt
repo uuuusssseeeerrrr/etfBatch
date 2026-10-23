@@ -1,5 +1,6 @@
 package com.ietf.etfbatch.stock.service
 
+import com.ietf.etfbatch.config.KisConfig
 import com.ietf.etfbatch.config.VaultConfig
 import com.ietf.etfbatch.stock.dto.KisPriceDetailOutput
 import com.ietf.etfbatch.stock.dto.KisPriceDetailResponse
@@ -22,6 +23,7 @@ import org.jetbrains.exposed.v1.jdbc.transactions.transaction
 import org.koin.core.annotation.Single
 import org.slf4j.LoggerFactory
 import java.time.LocalTime
+import java.time.ZoneId
 import kotlin.time.Clock
 import kotlin.time.Duration.Companion.milliseconds
 
@@ -33,7 +35,6 @@ class KisStockPriceService(
     companion object {
         const val PRICE_DETAIL_TR_ID = "HHDFS76200200"
         const val MIN_INTERVAL = 60L
-        private const val KIS_BASE_URL = "https://openapi.koreainvestment.com:9443"
         private val logger = LoggerFactory.getLogger(KisStockPriceService::class.java)
     }
 
@@ -152,7 +153,7 @@ class KisStockPriceService(
         val type = setOf("NYS", "NAS", "AMS")
         val startBoundary = LocalTime.of(8, 59)
         val endBoundary = LocalTime.of(17, 59)
-        val currentTime = LocalTime.now()
+        val currentTime = LocalTime.now(ZoneId.of("Asia/Seoul"))
 
         for (stock in targetList) {
             val startTime = System.currentTimeMillis()
@@ -164,7 +165,7 @@ class KisStockPriceService(
                 market = PrdtTypeCd.findDayMarketCodeByMarketCode(market)
             }
 
-            val kisPriceHttpResponse: HttpResponse = httpClient.get("$KIS_BASE_URL/uapi/overseas-price/v1/quotations/price-detail") {
+            val kisPriceHttpResponse: HttpResponse = httpClient.get("${KisConfig.BASE_URL}/uapi/overseas-price/v1/quotations/price-detail") {
                 url {
                     parameters.append("EXCD", market)
                     parameters.append("SYMB", stock.stockCode)

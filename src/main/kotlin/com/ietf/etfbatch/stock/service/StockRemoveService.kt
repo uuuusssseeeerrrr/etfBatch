@@ -20,11 +20,10 @@ class StockRemoveService() {
         val targetDate = Clock.System.now().minus(7, DateTimeUnit.DAY, TimeZone.of("Asia/Seoul"))
             .toLocalDateTime(TimeZone.of("Asia/Seoul"))
 
-        val targetDateFormat = """
-            ${targetDate.year}
-            ${targetDate.month.number.toString().padStart(2, '0')}
-            ${targetDate.day.toString().padStart(2, '0')}
-        """.trimIndent()
+        // Token.regDate 형식(yyyyMMdd)에 맞춤
+        val targetDateFormat = targetDate.year.toString() +
+                targetDate.month.number.toString().padStart(2, '0') +
+                targetDate.day.toString().padStart(2, '0')
 
         transaction {
             EtfPriceHistory.deleteWhere {

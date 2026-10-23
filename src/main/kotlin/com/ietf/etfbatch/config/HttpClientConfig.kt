@@ -9,6 +9,8 @@ import io.ktor.serialization.kotlinx.json.*
 import kotlinx.serialization.json.Json
 import org.koin.dsl.module
 
+private val SECRET_BODY_REGEX = Regex("\"(appkey|appsecret|access_token)\"\\s*:\\s*\"[^\"]*\"")
+
 val restClient = module {
     single {
         HttpClient(CIO) {
@@ -31,8 +33,14 @@ val restClient = module {
 
             if (!System.getenv("DOCKER_ENV").equals("true", ignoreCase = true)) {
                 install(Logging) {
-                    logger = Logger.DEFAULT
+                    // 토큰 발급 요청/응답 바디의 appkey, appsecret, access_token 값을 *** 로 마스킹
+                    logger = object : Logger {
+                        override fun log(message: String) {
+                            Logger.DEFAULT.log(message.replace(SECRET_BODY_REGEX, "\"$1\": \"***\""))
+                        }
+                    }
                     level = LogLevel.ALL
+                    sanitizeHeader { header -> header.lowercase() in listOf("appkey", "appsecret", "authorization", "cookie", "set-cookie") }
                 }
             }
 

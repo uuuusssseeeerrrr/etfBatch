@@ -2,6 +2,7 @@ package com.ietf.etfbatch
 
 import com.ietf.etfbatch.etf.service.EtfStocksSyncService
 import com.ietf.etfbatch.etf.service.StockListSyncService
+import com.ietf.etfbatch.history.service.BatchJobHistoryService
 import com.ietf.etfbatch.holiday.service.HolidayService
 import com.ietf.etfbatch.rate.service.RateService
 import com.ietf.etfbatch.stock.service.KisStockInfoService
@@ -15,7 +16,6 @@ import io.ktor.server.routing.*
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.launch
 import org.koin.core.annotation.Single
-import java.util.concurrent.atomic.AtomicBoolean
 
 @Single
 data class RoutingClass(
@@ -25,15 +25,64 @@ data class RoutingClass(
     val rateService: RateService,
     val etfStocksSyncService: EtfStocksSyncService,
     val stockListSyncService: StockListSyncService,
-    val holidayService: HolidayService
+    val holidayService: HolidayService,
+    val batchJobHistoryService: BatchJobHistoryService
 )
 
 fun RoutingClass.configureRouting(
     app: Application
 ) {
     val logger = app.environment.log
-    val etfStocksSyncRunning = AtomicBoolean(false)
-    val stockListSyncRunning = AtomicBoolean(false)
+
+    // 이전 실행 중 서버가 종료되어 결과가 남지 않은 배치는 실패로 기록
+    try {
+        batchJobHistoryService.markInterrupted()
+    } catch (e: Exception) {
+        logger.warn("중단된 배치 이력 정리 중 오류 발생", e)
+    }
+
+    /**
+     * 백그라운드에서 배치를 실행하고 성공/실패 여부를 batch_job_history에 기록
+     */
+    fun launchBatchJob(
+        jobName: String,
+        label: String,
+        block: suspend () -> Unit
+    ) {
+        // 이력 기록 실패가 배치 실행이나 결과 판정에 영향을 주지 않도록 분리
+        fun recordFinish(historyId: Int?, success: Boolean, message: String? = null) {
+            if (historyId == null) return
+            try {
+                batchJobHistoryService.finish(historyId, success, message)
+            } catch (e: Exception) {
+                logger.error("$label 실행 이력 저장 중 오류 발생", e)
+            }
+        }
+
+        app.launch {
+            val historyId = try {
+                batchJobHistoryService.start(jobName)
+            } catch (e: Exception) {
+                logger.error("$label 실행 이력 저장 중 오류 발생", e)
+                null
+            }
+
+            val errorMessage = try {
+                logger.info("$label 시작")
+                block()
+                logger.info("$label 완료")
+                null
+            } catch (e: CancellationException) {
+                recordFinish(historyId, success = false, message = "작업 취소됨")
+                throw e
+            } catch (e: Exception) {
+                logger.error("$label 중 오류 발생", e)
+                e.toString()
+            }
+
+            recordFinish(historyId, success = errorMessage == null, message = errorMessage)
+        }
+    }
 
     /**
      * 나중에 코드가 길어지면 분리하기
@@ -146,16 +195,12 @@ fun RoutingClass.configureRouting(
              * 정보조회 API
              */
             post("/stock-infos") {
-                try {
+                // 종목 개요 스크래핑으로 처리 시간이 길어질 수 있어 즉시 응답하고 백그라운드에서 실행
+                launchBatchJob("STOCK_INFO", "종목 정보 조회") {
                     kisStockInfoService.kisInfo()
-                    call.respondText("kisInfo 요청 처리됨")
-                } catch (e: Exception) {
-                    logger.error("종목 정보 조회 중 오류 발생", e)
-                    call.respondText(
-                        text = "kisInfo 요청중 오류발생",
-                        status = HttpStatusCode.InternalServerError
-                    )
                 }
+
+                call.respondText("종목 정보 조회 요청 접수", status = HttpStatusCode.Accepted)
             }
 
             /**
@@ -163,26 +208,8 @@ fun RoutingClass.configureRouting(
              */
             post("/etf-stocks/sync") {
                 // 처리 시간이 서버 읽기 타임아웃을 넘길 수 있어 즉시 응답하고 백그라운드에서 실행
-                if (!etfStocksSyncRunning.compareAndSet(false, true)) {
-                    call.respondText(
-                        text = "ETF 비중정보 동기화가 이미 실행 중입니다.",
-                        status = HttpStatusCode.Conflict
-                    )
-                    return@post
-                }
-
-                app.launch {
-                    try {
-                        logger.info("ETF 비중정보 동기화 시작")
-                        etfStocksSyncService.etfStockListInfo()
-                        logger.info("ETF 비중정보 동기화 완료")
-                    } catch (e: CancellationException) {
-                        throw e
-                    } catch (e: Exception) {
-                        logger.error("ETF 비중정보 동기화 중 오류 발생", e)
-                    } finally {
-                        etfStocksSyncRunning.set(false)
-                    }
+                launchBatchJob("ETF_STOCKS_SYNC", "ETF 비중정보 동기화") {
+                    etfStocksSyncService.etfStockListInfo()
                 }
 
                 call.respondText("ETF 비중정보 동기화 요청 접수", status = HttpStatusCode.Accepted)
@@ -193,26 +220,8 @@ fun RoutingClass.configureRouting(
              */
             post("/stock-list/sync") {
                 // 처리 시간이 서버 읽기 타임아웃을 넘길 수 있어 즉시 응답하고 백그라운드에서 실행
-                if (!stockListSyncRunning.compareAndSet(false, true)) {
-                    call.respondText(
-                        text = "주식목록 동기화가 이미 실행 중입니다.",
-                        status = HttpStatusCode.Conflict
-                    )
-                    return@post
-                }
-
-                app.launch {
-                    try {
-                        logger.info("주식목록 동기화 시작")
-                        stockListSyncService.syncStockList()
-                        logger.info("주식목록 동기화 완료")
-                    } catch (e: CancellationException) {
-                        throw e
-                    } catch (e: Exception) {
-                        logger.error("주식목록 동기화 중 오류 발생", e)
-                    } finally {
-                        stockListSyncRunning.set(false)
-                    }
+                launchBatchJob("STOCK_LIST_SYNC", "주식목록 동기화") {
+                    stockListSyncService.syncStockList()
                 }
 
                 call.respondText("주식목록 동기화 요청 접수", status = HttpStatusCode.Accepted)
