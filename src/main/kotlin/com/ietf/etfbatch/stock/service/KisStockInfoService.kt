@@ -356,6 +356,8 @@ class KisStockInfoService(
         val crumbResponse = httpClient.get("https://query1.finance.yahoo.com/v1/test/getcrumb") {
             header("User-Agent", YAHOO_USER_AGENT)
             header("Cookie", cookie)
+            // ContentNegotiation이 붙이는 Accept: application/json 으로는 406이 반환되어 text/plain 지정
+            header(HttpHeaders.Accept, ContentType.Text.Plain.toString())
         }
         val crumb = crumbResponse.bodyAsText().trim()
 

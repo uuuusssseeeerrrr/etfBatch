@@ -2,10 +2,10 @@
 exposed = "1.6.0"
 kotlin = "2.4.21"
 ktor = "3.6.0"
-logback = "1.6.5"
+logback = "1.6.6"
 koin-bom = "4.2.2"
 koin-plugin = "1.2.1"
-poi = "5.5.1"
+poi = "6.0.0"
 
 [libraries]
 ktor-server-core = { module = "io.ktor:ktor-server-core", version.ref = "ktor" }
@@ -45,7 +45,7 @@ oci-sdk-bom = { module = "com.oracle.oci.sdk:oci-java-sdk-bom", version = "3.97.
 oci-sdk-secrets = { module = "com.oracle.oci.sdk:oci-java-sdk-secrets" }
 oci-sdk-jersey3 = { module = "com.oracle.oci.sdk:oci-java-sdk-common-httpclient-jersey3" }
 
-juniversalchardet = { module = "com.github.albfernandez:juniversalchardet", version = "2.5.1" }
+juniversalchardet = { module = "com.github.albfernandez:juniversalchardet", version = "2.5.2" }
 jsoup = { module = "org.jsoup:jsoup", version = "1.23.2" }
 
 [plugins]

@@ -13,8 +13,8 @@ data class JpxSummaryResponse(
 
 @Serializable
 data class JpxSummarySection(
-    // key: 종목코드 (예: "1376")
-    @SerialName("data") val data: Map<String, JpxSummaryOutput> = emptyMap(),
+    // key: 종목코드 (예: "1376"), 조회 결과가 없으면(hitcount 0) null
+    @SerialName("data") val data: Map<String, JpxSummaryOutput>? = null,
     @SerialName("hitcount") val hitCount: Int,
     @SerialName("status") val status: Int,
     @SerialName("type") val type: String? = null
